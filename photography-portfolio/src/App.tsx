@@ -6,6 +6,8 @@ import Galleries from './pages/Galleries';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import Login from './pages/Login';
+import AdminHome from './pages/AdminHome';
+import AdminGalleries from './pages/AdminGalleries';
 import { useAuth } from './context/AuthContext';
 
 function App() {
@@ -41,10 +43,35 @@ function App() {
                 )}
               </ul>
               {user && (
-                <div className="d-flex align-items-center gap-3 ms-md-3">
-                  <span className="small text-muted">Hola, {user.name}</span>
-                  <button className="btn btn-sm btn-outline-dark" onClick={logout}>Salir</button>
-                </div>
+                <ul className="navbar-nav ms-md-3">
+                  <li className="nav-item dropdown">
+                    <button
+                      type="button"
+                      className="nav-link dropdown-toggle btn btn-link text-decoration-none"
+                      id="userMenu"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                    >
+                      Hola, {user.name}
+                    </button>
+                    <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+                      <li>
+                        <NavLink to="/admin/home" className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
+                          Adm. Home
+                        </NavLink>
+                      </li>
+                      <li>
+                        <NavLink to="/admin/galleries" className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
+                          Adm. Galerías
+                        </NavLink>
+                      </li>
+                      <li><hr className="dropdown-divider" /></li>
+                      <li>
+                        <button className="dropdown-item text-danger" onClick={logout}>Salir</button>
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
               )}
             </div>
           </div>
@@ -58,6 +85,8 @@ function App() {
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/admin/home" element={<AdminHome />} />
+            <Route path="/admin/galleries" element={<AdminGalleries />} />
           </Routes>
         </div>
       </main>
