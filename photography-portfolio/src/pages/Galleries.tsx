@@ -36,47 +36,41 @@ const Galleries: React.FC = () => {
   ), [galleries, selectedGalleryId]);
 
   return (
-    <div>
-      <h2 className="h3 mb-1">Galerías</h2>
-      <p className="text-secondary">Explora las colecciones disponibles.</p>
+    <div className="gallery-page">
+      <header className="mb-4">
+        <h2 className="h3 mb-1">Galerías</h2>
+        <p className="text-secondary">Explora las colecciones disponibles.</p>
+      </header>
 
-      <div className="row g-4 align-items-start">
-        <section className="col-12 col-md-4">
-          <div className="card shadow-sm">
-            <div className="card-body">
-              <h3 className="h6">Colecciones</h3>
-              <ul className="list-group">
-                {galleries.map(g => (
-                  <li key={g.slug} className="list-group-item d-flex justify-content-between align-items-center">
-                    <button
-                      onClick={() => setSelectedGalleryId(g.slug)}
-                      className={`btn btn-link text-decoration-none text-start flex-grow-1 ${selectedGalleryId === g.slug ? 'fw-semibold' : ''}`}
-                    >
-                      {g.name}
-                      <span className="badge text-bg-light ms-2">{photoCounts[g.slug] ?? 0}</span>
-                    </button>
-                  </li>
-                ))}
-                {galleries.length === 0 && <li className="list-group-item text-secondary">No hay galerías publicadas todavía.</li>}
-              </ul>
-            </div>
-          </div>
-        </section>
+      {galleries.length > 0 ? (
+        <ul className="nav gallery-tabs flex-wrap mb-4">
+          {galleries.map(g => (
+            <li key={g.slug} className="nav-item">
+              <button
+                type="button"
+                onClick={() => setSelectedGalleryId(g.slug)}
+                className={`nav-link ${selectedGalleryId === g.slug ? 'active' : ''}`}
+              >
+                {g.name}
+                <span className="badge rounded-pill ms-2">{photoCounts[g.slug] ?? 0}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-secondary">No hay galerías publicadas todavía.</p>
+      )}
 
-        <section className="col-12 col-md-8">
-          <h3 className="h6">Galería seleccionada</h3>
-          {!selectedGallery && <p className="text-secondary">Elige una galería para ver sus fotos.</p>}
-          {selectedGallery && (
-            <div className="card shadow-sm">
-              <div className="card-body vstack gap-3">
-                <strong>{selectedGallery.name}</strong>
-                {galleryLoading && <p className="text-secondary">Cargando fotos...</p>}
-                <ImageGallery folder={galleryFolderKey(selectedGallery.slug)} photos={selectedPhotos} />
-              </div>
-            </div>
-          )}
+      {!selectedGallery && galleries.length > 0 && (
+        <p className="text-secondary">Elige una galería para ver sus fotos.</p>
+      )}
+
+      {selectedGallery && (
+        <section>
+          {galleryLoading && <p className="text-secondary">Cargando fotos...</p>}
+          <ImageGallery folder={galleryFolderKey(selectedGallery.slug)} photos={selectedPhotos} />
         </section>
-      </div>
+      )}
     </div>
   );
 };

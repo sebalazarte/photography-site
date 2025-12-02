@@ -64,6 +64,45 @@ body {
   color: #fff;
 }
 
+.gallery-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.gallery-tabs {
+  border-bottom: 1px solid #ececec;
+  gap: 1rem;
+  padding-bottom: 0.5rem;
+}
+
+.gallery-tabs .nav-link {
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  color: #666;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.gallery-tabs .nav-link .badge {
+  background: #f0f0f0;
+  color: #555;
+  font-size: 0.7rem;
+}
+
+.gallery-tabs .nav-link.active {
+  background: #111;
+  color: #fff;
+}
+
+.gallery-tabs .nav-link.active .badge {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
 .gallery {
   padding: 1rem 0;
 }

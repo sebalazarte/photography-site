@@ -1,7 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
 import UploadPhotos from '../components/UploadPhotos';
-import ImageGallery from '../components/ImageGallery';
 import { galleryFolderKey } from '../constants';
 import { useAuth } from '../context/AuthContext';
 import { createGallery, deleteGallery as deleteGalleryApi, fetchGalleries, type GalleryDTO } from '../api/galleries';
@@ -15,7 +14,7 @@ const AdminGalleries = () => {
   const [selectedGalleryId, setSelectedGalleryId] = useState<string | null>(null);
   const [photoCounts, setPhotoCounts] = useState<Record<string, number>>({});
   const folderKey = selectedGalleryId ? galleryFolderKey(selectedGalleryId) : undefined;
-  const { photos: selectedPhotos, setPhotos: setSelectedPhotos, loading: galleryLoading } = useFolderPhotos(folderKey);
+  const { photos: selectedPhotos, setPhotos: setSelectedPhotos } = useFolderPhotos(folderKey);
 
   useEffect(() => {
     const load = async () => {
@@ -132,8 +131,7 @@ const AdminGalleries = () => {
                   photos={selectedPhotos}
                   onPhotosChange={(next) => setSelectedPhotos(next)}
                 />
-                {galleryLoading && <p className="text-secondary">Cargando fotos...</p>}
-                <ImageGallery folder={galleryFolderKey(selectedGallery.slug)} photos={selectedPhotos} />
+                
               </div>
             </div>
           )}
