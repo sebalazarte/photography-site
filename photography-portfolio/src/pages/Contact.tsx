@@ -25,7 +25,7 @@ const Contact: React.FC = () => {
   };
 
   return (
-    <div>
+    <div className='font-monospace'>
       <h2 className="h3 mb-1">Contacto</h2>
       <p className="text-secondary">Completa el formulario para ponerte en contacto.</p>
       <form onSubmit={onSubmit} className="row g-3" style={{ maxWidth: 640 }}>

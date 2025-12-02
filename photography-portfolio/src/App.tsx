@@ -52,7 +52,7 @@ function App() {
                       data-bs-toggle="dropdown"
                       aria-expanded="false"
                     >
-                      Hola, {user.name}
+                      {user.name}
                     </button>
                     <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
                       <li>

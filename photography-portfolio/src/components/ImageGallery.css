@@ -4,16 +4,29 @@
 }
 
 .masonry-item {
-  margin: 0 0 1.25 rem;
+  margin: 0 0 1.25rem;
   break-inside: avoid;
   display: block;
   overflow: hidden;
 }
 
+.masonry-item__trigger {
+  border: none;
+  padding: 0;
+  background: transparent;
+  width: 100%;
+  cursor: zoom-in;
+}
+
+.masonry-item__trigger:focus-visible {
+  outline: 2px solid #111;
+  outline-offset: 4px;
+}
+
 .masonry-item img {
   width: 100%;
   height: auto;      /* mantiene el aspecto original */
-  max-height: 366px; /* tope de alto, sin deformar */
+  max-height: 376px; /* tope de alto, sin deformar */
   display: block;
   object-fit: cover; /* opcional: recorta si supera el alto */
 }
@@ -33,5 +46,102 @@
 @media (min-width: 1200px) {
   .masonry-grid {
     column-count: 4;
+  }
+}
+
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1.5rem;
+}
+
+.lightbox-content {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lightbox-image {
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+.lightbox-close {
+  position: absolute;
+  top: -2.5rem;
+  right: 0;
+  background: transparent;
+  border: none;
+  font-size: 2rem;
+  color: #fff;
+  cursor: pointer;
+}
+
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: rgba(0, 0, 0, 0.4);
+  color: #fff;
+  font-size: 2.5rem;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.lightbox-nav.prev {
+  left: -3.5rem;
+}
+
+.lightbox-nav.next {
+  right: -3.5rem;
+}
+
+.lightbox-caption {
+  position: absolute;
+  bottom: -2.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #eee;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 768px) {
+  .lightbox-close {
+    top: 0.5rem;
+    right: 0.5rem;
+  }
+
+  .lightbox-nav.prev {
+    left: -1rem;
+  }
+
+  .lightbox-nav.next {
+    right: -1rem;
+  }
+
+  .lightbox-caption {
+    position: static;
+    transform: none;
+    margin-top: 0.75rem;
+    text-align: center;
   }
 }

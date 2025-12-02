@@ -79,7 +79,7 @@ const AdminGalleries = () => {
   }
 
   return (
-    <div>
+    <div className='font-monospace'>
       <h1 className="h4 mb-1">Administrar galerías</h1>
       <p className="text-secondary">Crea, elimina y carga fotos para cada colección.</p>
 
@@ -120,20 +120,13 @@ const AdminGalleries = () => {
         </section>
 
         <section className="col-12 col-md-8">
-          <h3 className="h6">Detalle</h3>
           {!selectedGallery && <p className="text-secondary">Selecciona una galería para ver y agregar fotos.</p>}
           {selectedGallery && (
-            <div className="card shadow-sm">
-              <div className="card-body vstack gap-3">
-                <strong>{selectedGallery.name}</strong>
                 <UploadPhotos
                   folder={galleryFolderKey(selectedGallery.slug)}
                   photos={selectedPhotos}
                   onPhotosChange={(next) => setSelectedPhotos(next)}
                 />
-                
-              </div>
-            </div>
           )}
         </section>
       </div>

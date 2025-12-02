@@ -13,7 +13,7 @@ const AdminHome = () => {
   }
 
   return (
-    <div className="vstack gap-4">
+    <div className="vstack gap-4 font-monospace">
       <header>
         <h1 className="h4 mb-1">Administrar Home</h1>
         <p className="text-secondary mb-0">Sube fotos destacadas para la portada.</p>
