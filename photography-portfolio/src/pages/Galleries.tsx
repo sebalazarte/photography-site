@@ -3,62 +3,78 @@ import type React from 'react';
 import UploadPhotos from '../components/UploadPhotos';
 import ImageGallery from '../components/ImageGallery';
 import { galleryFolderKey } from '../constants';
-import { listPhotos, type StoredPhoto } from '../utils/photoStorage';
 import { useAuth } from '../context/AuthContext';
-
-type Gallery = {
-  id: string;
-  name: string;
-};
-
-const STORAGE_KEY = 'pp_galleries_v2';
+import { createGallery, deleteGallery as deleteGalleryApi, fetchGalleries, type GalleryDTO } from '../api/galleries';
+import { useFolderPhotos } from '../hooks/useFolderPhotos';
+import { listFolderPhotos } from '../api/photos';
 
 const Galleries: React.FC = () => {
-  const [galleries, setGalleries] = useState<Gallery[]>([]);
+  const [galleries, setGalleries] = useState<GalleryDTO[]>([]);
   const [newGalleryName, setNewGalleryName] = useState('');
   const [selectedGalleryId, setSelectedGalleryId] = useState<string | null>(null);
-  const [selectedPhotos, setSelectedPhotos] = useState<StoredPhoto[]>([]);
+  const [photoCounts, setPhotoCounts] = useState<Record<string, number>>({});
   const { user } = useAuth();
+  const folderKey = selectedGalleryId ? galleryFolderKey(selectedGalleryId) : undefined;
+  const { photos: selectedPhotos, setPhotos: setSelectedPhotos, loading: galleryLoading } = useFolderPhotos(folderKey);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as Gallery[];
-        setGalleries(parsed.map(g => ({ id: g.id, name: g.name })));
+    const load = async () => {
+      const data = await fetchGalleries();
+      setGalleries(data);
+      if (data.length && !selectedGalleryId) {
+        setSelectedGalleryId(data[0].slug);
       }
-    } catch {}
+      const entries = await Promise.all(
+        data.map(async (g) => {
+          const photos = await listFolderPhotos(galleryFolderKey(g.slug));
+          return [g.slug, photos.length] as const;
+        })
+      );
+      setPhotoCounts(Object.fromEntries(entries));
+    };
+    load().catch((err) => console.error('No se pudieron cargar las galerías', err));
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(galleries));
-  }, [galleries]);
-
   const selectedGallery = useMemo(() => (
-    galleries.find(g => g.id === selectedGalleryId) || null
+    galleries.find(g => g.slug === selectedGalleryId) || null
   ), [galleries, selectedGalleryId]);
 
-  useEffect(() => {
-    if (!selectedGallery) {
-      setSelectedPhotos([]);
-      return;
-    }
-    setSelectedPhotos(listPhotos(galleryFolderKey(selectedGallery.id)));
-  }, [selectedGallery]);
-
-  const photosCount = (id: string) => listPhotos(galleryFolderKey(id)).length;
-
-  const addGallery = () => {
-    const name = newGalleryName.trim();
-    if (!name) return;
-    const g: Gallery = { id: crypto.randomUUID(), name };
-    setGalleries(prev => [...prev, g]);
-    setNewGalleryName('');
+  const refreshCounts = async () => {
+    const entries = await Promise.all(
+      galleries.map(async g => {
+        const photos = await listFolderPhotos(galleryFolderKey(g.slug));
+        return [g.slug, photos.length] as const;
+      })
+    );
+    setPhotoCounts(Object.fromEntries(entries));
   };
 
-  const deleteGallery = (id: string) => {
-    setGalleries(prev => prev.filter(g => g.id !== id));
-    if (selectedGalleryId === id) setSelectedGalleryId(null);
+  const addGallery = async () => {
+    const name = newGalleryName.trim();
+    if (!name) return;
+    try {
+      const updated = await createGallery(name);
+      setGalleries(updated);
+      setNewGalleryName('');
+      setSelectedGalleryId(updated[updated.length - 1]?.slug ?? null);
+      await refreshCounts();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'No se pudo crear la galería');
+    }
+  };
+
+  const deleteGallery = async (slug: string) => {
+    try {
+      const updated = await deleteGalleryApi(slug);
+      setGalleries(updated);
+      if (selectedGalleryId === slug) {
+        setSelectedGalleryId(updated[0]?.slug ?? null);
+        setSelectedPhotos([]);
+      }
+      await refreshCounts();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'No se pudo eliminar la galería');
+    }
   };
 
   return (
@@ -85,15 +101,15 @@ const Galleries: React.FC = () => {
               <h3 className="h6">Todas las galerías</h3>
               <ul className="list-group">
                 {galleries.map(g => (
-                  <li key={g.id} className="list-group-item d-flex justify-content-between align-items-center">
+                  <li key={g.slug} className="list-group-item d-flex justify-content-between align-items-center">
                     <button
-                      onClick={() => setSelectedGalleryId(g.id)}
-                      className={`btn btn-link text-decoration-none text-start flex-grow-1 ${selectedGalleryId === g.id ? 'fw-semibold' : ''}`}
+                      onClick={() => setSelectedGalleryId(g.slug)}
+                      className={`btn btn-link text-decoration-none text-start flex-grow-1 ${selectedGalleryId === g.slug ? 'fw-semibold' : ''}`}
                     >
                       {g.name}
-                      <span className="badge text-bg-light ms-2">{photosCount(g.id)}</span>
+                      <span className="badge text-bg-light ms-2">{photoCounts[g.slug] ?? 0}</span>
                     </button>
-                    <button onClick={() => deleteGallery(g.id)} className="btn btn-sm btn-outline-danger">Eliminar</button>
+                    <button onClick={() => deleteGallery(g.slug)} className="btn btn-sm btn-outline-danger">Eliminar</button>
                   </li>
                 ))}
                 {galleries.length === 0 && <li className="list-group-item text-secondary">No hay galerías aún.</li>}
@@ -113,9 +129,14 @@ const Galleries: React.FC = () => {
                   {!user && <span className="text-danger small">Debes iniciar sesión para subir fotos.</span>}
                 </div>
                 {user && (
-                            <UploadPhotos folder={galleryFolderKey(selectedGallery.id)} onPhotosChange={setSelectedPhotos} />
+                  <UploadPhotos
+                    folder={galleryFolderKey(selectedGallery.slug)}
+                    photos={selectedPhotos}
+                    onPhotosChange={(next) => setSelectedPhotos(next)}
+                  />
                 )}
-                <ImageGallery photos={selectedPhotos} />
+                {galleryLoading && <p className="text-secondary">Cargando fotos...</p>}
+                <ImageGallery folder={galleryFolderKey(selectedGallery.slug)} photos={selectedPhotos} />
               </div>
             </div>
           )}

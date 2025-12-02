@@ -1,31 +1,45 @@
-import React, { useState, useCallback, useRef, useEffect, useId } from 'react';
-import { appendPhotos, listPhotos, removePhoto as removeStoredPhoto, type StoredPhoto } from '../utils/photoStorage';
-
-const createId = () => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2));
+import React, { useState, useCallback, useEffect, useId } from 'react';
+import type { StoredPhoto } from '../types/photos';
+import { deletePhotoFromFolder, listFolderPhotos, uploadToFolder } from '../api/photos';
 
 interface UploadPhotosProps {
   folder: string;
+  photos?: StoredPhoto[];
   onPhotosChange?: (photos: StoredPhoto[]) => void;
   showPreview?: boolean;
 }
 
-const UploadPhotos: React.FC<UploadPhotosProps> = ({ folder, onPhotosChange, showPreview = true }) => {
-  const [photos, setPhotos] = useState<StoredPhoto[]>([]);
+const UploadPhotos: React.FC<UploadPhotosProps> = ({ folder, photos, onPhotosChange, showPreview = true }) => {
+  const [localPhotos, setLocalPhotos] = useState<StoredPhoto[]>([]);
   const [isDragging, setIsDragging] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-  const processedKeysRef = useRef<Set<string>>(new Set());
+  const [uploading, setUploading] = useState(false);
   const inputId = useId();
 
-  useEffect(() => {
-    const existing = listPhotos(folder);
-    setPhotos(existing);
-    processedKeysRef.current = new Set();
-  }, [folder]);
+  const effectivePhotos = photos ?? localPhotos;
 
-  const sync = (next: StoredPhoto[]) => {
-    setPhotos(next);
+  const sync = useCallback((next: StoredPhoto[]) => {
+    if (!photos) {
+      setLocalPhotos(next);
+    }
     onPhotosChange?.(next);
-  };
+  }, [photos, onPhotosChange]);
+
+  useEffect(() => {
+    if (photos) return;
+    listFolderPhotos(folder).then(setLocalPhotos).catch(() => setLocalPhotos([]));
+  }, [folder, photos]);
+
+  const handleFiles = useCallback(async (files: FileList) => {
+    try {
+      setUploading(true);
+      const updated = await uploadToFolder(folder, files);
+      sync(updated);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'No se pudieron subir las fotos');
+    } finally {
+      setUploading(false);
+    }
+  }, [folder, sync]);
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -48,84 +62,25 @@ const UploadPhotos: React.FC<UploadPhotosProps> = ({ folder, onPhotosChange, sho
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
-    
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFiles(e.dataTransfer.files);
+      void handleFiles(e.dataTransfer.files);
     }
-  }, []);
+  }, [handleFiles]);
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      handleFiles(e.target.files);
+      void handleFiles(e.target.files);
+      e.target.value = '';
     }
   };
 
-  const handleFiles = (files: FileList) => {
-    const batchKeys = new Set<string>();
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-
-      if (!file.type.match('image.*')) {
-        alert(`${file.name} is not an image file. Please select only image files.`);
-        continue;
-      }
-
-      const key = `${file.name}_${file.size}_${file.lastModified}`;
-      if (batchKeys.has(key) || processedKeysRef.current.has(key)) {
-        continue; // skip duplicates within batch or already processed
-      }
-      batchKeys.add(key);
-      processedKeysRef.current.add(key);
-
-      setUploadProgress(0);
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const newPhoto: StoredPhoto = {
-          id: createId(),
-          name: file.name,
-          url: e.target?.result as string,
-          date: new Date().toISOString(),
-        };
-
-        const finalize = () => {
-          const current = listPhotos(folder);
-          if (current.some(p => p.url === newPhoto.url)) {
-            sync(current);
-            return;
-          }
-          const result = appendPhotos(folder, [newPhoto]);
-          if (!result) {
-            alert('No hay espacio suficiente en el navegador para guardar más fotos. Elimina algunas antes de continuar.');
-            sync(current);
-            return;
-          }
-          sync(result);
-        };
-
-        const interval = setInterval(() => {
-          setUploadProgress(prev => {
-            if (prev === null) return 0;
-            if (prev >= 100) {
-              clearInterval(interval);
-              finalize();
-              return null;
-            }
-            return prev + 10;
-          });
-        }, 100);
-      };
-      reader.readAsDataURL(file);
+  const removePhoto = async (filename: string) => {
+    try {
+      const updated = await deletePhotoFromFolder(folder, filename);
+      sync(updated);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'No se pudo eliminar la foto');
     }
-  };
-
-  const removePhoto = (id: string) => {
-    const result = removeStoredPhoto(folder, id);
-    if (!result) {
-      alert('No pudimos actualizar el almacenamiento. Intenta nuevamente.');
-      return;
-    }
-    sync(result);
   };
 
 
@@ -159,31 +114,28 @@ const UploadPhotos: React.FC<UploadPhotosProps> = ({ folder, onPhotosChange, sho
         </div>
       </div>
 
-      {uploadProgress !== null && (
+      {uploading && (
         <div className="upload-progress">
-          <div className="progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={uploadProgress}>
-            <div
-              className="progress-bar"
-              style={{ width: `${uploadProgress}%` }}
-            ></div>
+          <div className="progress">
+            <div className="progress-bar progress-bar-striped progress-bar-animated" style={{ width: '100%' }}></div>
           </div>
-          <span className="progress-text">Subiendo... {uploadProgress}%</span>
+          <span className="progress-text">Subiendo...</span>
         </div>
       )}
 
-      {showPreview && photos.length > 0 && (
+      {showPreview && effectivePhotos.length > 0 && (
         <div className="uploaded-photos">
-          <h3 className="h5 mb-3">Fotos subidas ({photos.length})</h3>
+          <h3 className="h5 mb-3">Fotos subidas ({effectivePhotos.length})</h3>
           <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
-            {photos.map(photo => (
+            {effectivePhotos.map(photo => (
               <div key={photo.id} className="col">
                 <div className="photo-item card h-100">
-                  <img src={photo.url} alt={photo.name} className="card-img-top" />
+                  <img src={photo.url} alt={photo.originalName} className="card-img-top" />
                   <div className="photo-info card-body d-flex justify-content-between align-items-center">
-                    <span className="photo-name" title={photo.name}>{photo.name}</span>
+                    <span className="photo-name" title={photo.originalName}>{photo.originalName}</span>
                     <button
                       className="btn btn-sm btn-outline-danger"
-                      onClick={() => removePhoto(photo.id)}
+                      onClick={() => removePhoto(photo.filename)}
                     >
                       Eliminar
                     </button>

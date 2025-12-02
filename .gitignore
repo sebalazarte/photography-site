@@ -7,6 +7,8 @@ dist/
 build/
 coverage/
 htmlcov/
+src/Home/
+src/Galleries/
 
 # Environment
 .env
