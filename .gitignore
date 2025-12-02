@@ -7,8 +7,10 @@ dist/
 build/
 coverage/
 htmlcov/
-src/Home/
-src/Galleries/
+src/Home/*
+!src/Home/.gitkeep
+src/Galleries/*
+!src/Galleries/.gitkeep
 
 # Environment
 .env

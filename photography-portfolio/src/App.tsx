@@ -16,7 +16,7 @@ function App() {
       <header className="App-header mb-4">
         <nav className="navbar navbar-expand-md bg-body-tertiary">
           <div className="container">
-            <NavLink to="/" className="navbar-brand"><div className="nav nav-name text-uppercase">Matsuya</div></NavLink>
+            <NavLink to="/" className="navbar-brand"><div className="nav nav-name text-uppercase">Seba Lazarte</div></NavLink>
             <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
               <span className="navbar-toggler-icon"></span>
             </button>

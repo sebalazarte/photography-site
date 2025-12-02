@@ -25,7 +25,7 @@ const Home = () => {
         </section>
       )}
 
-      <footer className="home-footer text-uppercase">Matsuya</footer>
+      <footer className="home-footer text-uppercase"></footer>
     </div>
   );
 };
