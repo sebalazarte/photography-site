@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 
 interface Photo {
   id: string;
@@ -11,6 +11,7 @@ const UploadPhotos: React.FC = () => {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const processedKeysRef = useRef<Set<string>>(new Set());
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -46,18 +47,24 @@ const UploadPhotos: React.FC = () => {
   };
 
   const handleFiles = (files: FileList) => {
+    const batchKeys = new Set<string>();
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      
-      // Check if it's an image file
+
       if (!file.type.match('image.*')) {
         alert(`${file.name} is not an image file. Please select only image files.`);
         continue;
       }
 
-      // Simulate upload progress
+      const key = `${file.name}_${file.size}_${file.lastModified}`;
+      if (batchKeys.has(key) || processedKeysRef.current.has(key)) {
+        continue; // skip duplicates within batch or already processed
+      }
+      batchKeys.add(key);
+      processedKeysRef.current.add(key);
+
       setUploadProgress(0);
-      
+
       const reader = new FileReader();
       reader.onload = (e) => {
         const newPhoto: Photo = {
@@ -66,14 +73,17 @@ const UploadPhotos: React.FC = () => {
           url: e.target?.result as string,
           date: new Date(),
         };
-        
-        // Simulate upload progress
+
         const interval = setInterval(() => {
           setUploadProgress(prev => {
             if (prev === null) return 0;
             if (prev >= 100) {
               clearInterval(interval);
-              setPhotos(prevPhotos => [...prevPhotos, newPhoto]);
+              setPhotos(prevPhotos => {
+                // final guard against duplicates by URL
+                if (prevPhotos.some(p => p.url === newPhoto.url)) return prevPhotos;
+                return [...prevPhotos, newPhoto];
+              });
               return null;
             }
             return prev + 10;
@@ -90,61 +100,63 @@ const UploadPhotos: React.FC = () => {
 
   return (
     <div className="upload-container">
-      <div 
-        className={`upload-area ${isDragging ? 'dragging' : ''}`}
+      <div
+        className={`upload-area ${isDragging ? 'dragging' : ''} card shadow-sm`}
         onDragEnter={handleDragEnter}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <div className="upload-content">
+        <div className="card-body upload-content">
           <div className="upload-icon">📷</div>
-          <h3>Upload Your Photos</h3>
-          <p>Drag & drop your images here, or click to browse</p>
-          <input 
-            type="file" 
-            id="file-input" 
-            accept="image/*" 
-            multiple 
+          <h3 className="h4">Sube tus fotos</h3>
+          <p className="text-secondary">Arrastra y suelta o haz clic para seleccionar</p>
+          <input
+            type="file"
+            id="file-input"
+            accept="image/*"
+            multiple
             onChange={handleFileInput}
-            style={{ display: 'none' }} 
+            style={{ display: 'none' }}
           />
-          <button 
-            className="upload-button"
+          <button
+            className="btn btn-primary"
             onClick={() => document.getElementById('file-input')?.click()}
           >
-            Select Photos
+            Seleccionar fotos
           </button>
         </div>
       </div>
 
       {uploadProgress !== null && (
         <div className="upload-progress">
-          <div className="progress-bar">
-            <div 
-              className="progress-fill" 
+          <div className="progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={uploadProgress}>
+            <div
+              className="progress-bar"
               style={{ width: `${uploadProgress}%` }}
             ></div>
           </div>
-          <span className="progress-text">Uploading... {uploadProgress}%</span>
+          <span className="progress-text">Subiendo... {uploadProgress}%</span>
         </div>
       )}
 
       {photos.length > 0 && (
         <div className="uploaded-photos">
-          <h3>Uploaded Photos ({photos.length})</h3>
-          <div className="photo-grid">
+          <h3 className="h5 mb-3">Fotos subidas ({photos.length})</h3>
+          <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
             {photos.map(photo => (
-              <div key={photo.id} className="photo-item">
-                <img src={photo.url} alt={photo.name} />
-                <div className="photo-info">
-                  <span className="photo-name">{photo.name}</span>
-                  <button 
-                    className="remove-button" 
-                    onClick={() => removePhoto(photo.id)}
-                  >
-                    Remove
-                  </button>
+              <div key={photo.id} className="col">
+                <div className="photo-item card h-100">
+                  <img src={photo.url} alt={photo.name} className="card-img-top" />
+                  <div className="photo-info card-body d-flex justify-content-between align-items-center">
+                    <span className="photo-name" title={photo.name}>{photo.name}</span>
+                    <button
+                      className="btn btn-sm btn-outline-danger"
+                      onClick={() => removePhoto(photo.id)}
+                    >
+                      Eliminar
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
