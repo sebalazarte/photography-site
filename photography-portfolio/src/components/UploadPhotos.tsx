@@ -1,17 +1,31 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useId } from 'react';
+import { appendPhotos, listPhotos, removePhoto as removeStoredPhoto, type StoredPhoto } from '../utils/photoStorage';
 
-interface Photo {
-  id: string;
-  name: string;
-  url: string;
-  date: Date;
+const createId = () => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2));
+
+interface UploadPhotosProps {
+  folder: string;
+  onPhotosChange?: (photos: StoredPhoto[]) => void;
+  showPreview?: boolean;
 }
 
-const UploadPhotos: React.FC = () => {
-  const [photos, setPhotos] = useState<Photo[]>([]);
+const UploadPhotos: React.FC<UploadPhotosProps> = ({ folder, onPhotosChange, showPreview = true }) => {
+  const [photos, setPhotos] = useState<StoredPhoto[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const processedKeysRef = useRef<Set<string>>(new Set());
+  const inputId = useId();
+
+  useEffect(() => {
+    const existing = listPhotos(folder);
+    setPhotos(existing);
+    processedKeysRef.current = new Set();
+  }, [folder]);
+
+  const sync = (next: StoredPhoto[]) => {
+    setPhotos(next);
+    onPhotosChange?.(next);
+  };
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -67,11 +81,26 @@ const UploadPhotos: React.FC = () => {
 
       const reader = new FileReader();
       reader.onload = (e) => {
-        const newPhoto: Photo = {
-          id: Math.random().toString(36).substr(2, 9),
+        const newPhoto: StoredPhoto = {
+          id: createId(),
           name: file.name,
           url: e.target?.result as string,
-          date: new Date(),
+          date: new Date().toISOString(),
+        };
+
+        const finalize = () => {
+          const current = listPhotos(folder);
+          if (current.some(p => p.url === newPhoto.url)) {
+            sync(current);
+            return;
+          }
+          const result = appendPhotos(folder, [newPhoto]);
+          if (!result) {
+            alert('No hay espacio suficiente en el navegador para guardar más fotos. Elimina algunas antes de continuar.');
+            sync(current);
+            return;
+          }
+          sync(result);
         };
 
         const interval = setInterval(() => {
@@ -79,11 +108,7 @@ const UploadPhotos: React.FC = () => {
             if (prev === null) return 0;
             if (prev >= 100) {
               clearInterval(interval);
-              setPhotos(prevPhotos => {
-                // final guard against duplicates by URL
-                if (prevPhotos.some(p => p.url === newPhoto.url)) return prevPhotos;
-                return [...prevPhotos, newPhoto];
-              });
+              finalize();
               return null;
             }
             return prev + 10;
@@ -95,8 +120,14 @@ const UploadPhotos: React.FC = () => {
   };
 
   const removePhoto = (id: string) => {
-    setPhotos(prev => prev.filter(photo => photo.id !== id));
+    const result = removeStoredPhoto(folder, id);
+    if (!result) {
+      alert('No pudimos actualizar el almacenamiento. Intenta nuevamente.');
+      return;
+    }
+    sync(result);
   };
+
 
   return (
     <div className="upload-container">
@@ -113,7 +144,7 @@ const UploadPhotos: React.FC = () => {
           <p className="text-secondary">Arrastra y suelta o haz clic para seleccionar</p>
           <input
             type="file"
-            id="file-input"
+            id={inputId}
             accept="image/*"
             multiple
             onChange={handleFileInput}
@@ -121,7 +152,7 @@ const UploadPhotos: React.FC = () => {
           />
           <button
             className="btn btn-primary"
-            onClick={() => document.getElementById('file-input')?.click()}
+            onClick={() => document.getElementById(inputId)?.click()}
           >
             Seleccionar fotos
           </button>
@@ -140,7 +171,7 @@ const UploadPhotos: React.FC = () => {
         </div>
       )}
 
-      {photos.length > 0 && (
+      {showPreview && photos.length > 0 && (
         <div className="uploaded-photos">
           <h3 className="h5 mb-3">Fotos subidas ({photos.length})</h3>
           <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">

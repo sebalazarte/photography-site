@@ -10,8 +10,9 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #fafafa;
-  color: #333;
+  background-color: #fff;
+  color: #111;
+  letter-spacing: 0.01rem;
 }
 
 .App {
@@ -30,6 +31,12 @@ body {
 
 .navbar {
   margin-top: 1rem;
+}
+
+.nav-name {
+  border-top: none;
+  padding-top: 0;
+  letter-spacing: 0.4rem;
 }
 
 .nav-links {
@@ -107,3 +114,74 @@ body {
     gap: 1rem;
   }
 }
+
+  .home-page {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+.home-footer {
+  font-size: 1.25rem;
+  letter-spacing: 0.5rem;
+  border-top: 1px solid #eaeaea;
+  padding-top: 1rem;
+}
+
+
+
+  .home-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    border-bottom: 1px solid #eaeaea;
+    padding-bottom: 1rem;
+  }
+
+  .home-brand {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.2rem;
+  }
+
+  .home-brand__title {
+    font-weight: 600;
+  }
+
+  .home-brand__tag {
+    color: #888;
+    letter-spacing: 0.4rem;
+  }
+
+  .home-menu {
+    display: flex;
+    gap: 1.5rem;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.2rem;
+  }
+
+  .home-menu__item {
+    background: none;
+    border: none;
+    padding: 0;
+    color: #666;
+    position: relative;
+  }
+
+  .home-menu__item--active {
+    color: #000;
+  }
+
+  .home-menu__item--active::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -4px;
+    height: 2px;
+    background: #000;
+  }
