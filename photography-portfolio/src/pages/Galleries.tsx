@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type React from 'react';
 import ImageGallery from '../components/ImageGallery';
+import GalleryList from '../components/GalleryList';
 import { galleryFolderKey } from '../constants';
 import { fetchGalleries, type GalleryDTO } from '../api/galleries';
 import { useFolderPhotos } from '../hooks/useFolderPhotos';
@@ -42,24 +43,12 @@ const Galleries: React.FC = () => {
         <p className="text-secondary">Explora las colecciones disponibles.</p>
       </header>
 
-      {galleries.length > 0 ? (
-        <ul className="nav gallery-tabs flex-wrap mb-4">
-          {galleries.map(g => (
-            <li key={g.slug} className="nav-item">
-              <button
-                type="button"
-                onClick={() => setSelectedGalleryId(g.slug)}
-                className={`nav-link ${selectedGalleryId === g.slug ? 'active' : ''}`}
-              >
-                {g.name}
-                <span className="badge rounded-pill ms-2">{photoCounts[g.slug] ?? 0}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-secondary">No hay galerías publicadas todavía.</p>
-      )}
+      <GalleryList
+        galleries={galleries}
+        selectedGalleryId={selectedGalleryId}
+        onSelectGallery={setSelectedGalleryId}
+        photoCounts={photoCounts}
+      />
 
       {!selectedGallery && galleries.length > 0 && (
         <p className="text-secondary">Elige una galería para ver sus fotos.</p>

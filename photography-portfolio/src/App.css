@@ -124,6 +124,10 @@ body {
   gap: 0.35rem;
 }
 
+.gallery-tabs .nav-link:not(.active) {
+  border: 1px solid #dedede;
+}
+
 .gallery-tabs .nav-link .badge {
   background: #f0f0f0;
   color: #555;
