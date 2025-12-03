@@ -1,12 +1,3 @@
 {
-  "galleries": [
-    {
-      "name": "Mauricio & Eli",
-      "slug": "mauricio-eli"
-    },
-    {
-      "name": "Brain & Jan",
-      "slug": "brain-jan"
-    }
-  ]
+  "galleries": []
 }
