@@ -131,29 +131,19 @@ const listFiles = async (info) => {
 
     const allOrders = await readPhotoOrder();
     const folderOrders = { ...(allOrders[info.orderKey] ?? {}) };
-    const existingIds = new Set();
-    const missingIds = [];
+    const existingIds = new Set(items.map(item => item.id));
     let updated = false;
 
-    items.forEach((item) => {
-      existingIds.add(item.id);
+    // Assign order to new photos (newest first by default)
+    const timestamp = Date.now();
+    items.forEach((item, index) => {
       if (typeof folderOrders[item.id] !== 'number') {
-        missingIds.push(item.id);
+        folderOrders[item.id] = timestamp + (items.length - index);
+        updated = true;
       }
     });
 
-    if (missingIds.length) {
-      const maxOrder = Object.values(folderOrders)
-        .filter(value => typeof value === 'number')
-        .reduce((prev, value) => Math.max(prev, value), 0);
-      let nextOrder = maxOrder;
-      missingIds.reverse().forEach((id) => {
-        nextOrder += 1;
-        folderOrders[id] = nextOrder;
-      });
-      updated = true;
-    }
-
+    // Remove orders for files that no longer exist
     Object.keys(folderOrders).forEach((id) => {
       if (!existingIds.has(id)) {
         delete folderOrders[id];
@@ -161,7 +151,7 @@ const listFiles = async (info) => {
       }
     });
 
-    if (updated) {
+    if (updated || allOrders[info.orderKey] !== folderOrders) {
       if (Object.keys(folderOrders).length) {
         allOrders[info.orderKey] = folderOrders;
       } else {
