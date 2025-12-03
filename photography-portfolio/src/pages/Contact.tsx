@@ -1,51 +1,10 @@
-import { useRef, useState } from 'react';
 import type React from 'react';
 import { CONTACT_EMAIL, CONTACT_NAME, CONTACT_PHONE, CONTACT_PHONE_WHATSAPP } from '../config/contact';
 import { useAuth } from '../context/AuthContext';
-import { useFolderPhotos } from '../hooks/useFolderPhotos';
-import { CONTACT_FOLDER } from '../constants';
-import { deletePhotoFromFolder, uploadToFolder } from '../api/photos';
+import ContactPhotoManager from '../components/ContactPhotoManager';
 
 const Contact: React.FC = () => {
-  const [status, setStatus] = useState<'idle' | 'saving' | 'error'>('idle');
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { user } = useAuth();
-  const { photos, setPhotos, loading, error } = useFolderPhotos(CONTACT_FOLDER);
-  const mainPhoto = photos[0];
-
-  const handlePhotoSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!event.target.files || event.target.files.length === 0) return;
-    try {
-      setStatus('saving');
-      const updated = await uploadToFolder(CONTACT_FOLDER, event.target.files);
-      setPhotos(updated);
-      setStatus('idle');
-    } catch (err) {
-      console.error('No se pudo subir la foto de contacto', err);
-      setStatus('error');
-    } finally {
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  };
-
-  const handleRemovePhoto = async () => {
-    if (!mainPhoto) return;
-    try {
-      setStatus('saving');
-      const updated = await deletePhotoFromFolder(CONTACT_FOLDER, mainPhoto.filename);
-      setPhotos(updated);
-      setStatus('idle');
-    } catch (err) {
-      console.error('No se pudo eliminar la foto de contacto', err);
-      setStatus('error');
-    } finally {
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  };
 
   return (
     <div className="font-monospace">
@@ -53,65 +12,7 @@ const Contact: React.FC = () => {
         <h2 className="h3 mb-3">Contacto</h2>
         <div className="row g-4 align-items-start">
           <div className="col-12 col-md-4">
-            <div className="card shadow-sm text-center">
-              <div className="card-body">
-                {loading ? (
-                  <div
-                    style={{ height: 320 }}
-                    className="d-grid place-items-center text-secondary bg-light rounded"
-                  >
-                    Cargando…
-                  </div>
-                ) : mainPhoto ? (
-                  <img
-                    src={mainPhoto.url}
-                    alt={CONTACT_NAME}
-                    style={{ width: '100%', height: 320, objectFit: 'contain', borderRadius: 6 }}
-                  />
-                ) : (
-                  <div
-                    style={{ height: 320 }}
-                    className="d-grid place-items-center text-secondary bg-light rounded"
-                  >
-                    Sin foto
-                  </div>
-                )}
-                {error && !loading && (
-                  <span className="text-danger small d-block mt-2">{error}</span>
-                )}
-                {user && (
-                  <div className="mt-3 d-flex flex-column gap-2">
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      style={{ display: 'none' }}
-                      onChange={handlePhotoSelect}
-                    />
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-primary"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={status === 'saving'}
-                    >
-                      {mainPhoto ? 'Cambiar foto' : 'Subir foto'}
-                    </button>
-                    {mainPhoto && (
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline-secondary"
-                        onClick={handleRemovePhoto}
-                        disabled={status === 'saving'}
-                      >
-                        Quitar foto
-                      </button>
-                    )}
-                    {status === 'saving' && <span className="text-info small">Guardando…</span>}
-                    {status === 'error' && <span className="text-danger small">No se pudo procesar la imagen.</span>}
-                  </div>
-                )}
-              </div>
-            </div>
+            <ContactPhotoManager contactName={CONTACT_NAME} isEditable={Boolean(user)} />
           </div>
 
           <div className="col-12 col-md-8">

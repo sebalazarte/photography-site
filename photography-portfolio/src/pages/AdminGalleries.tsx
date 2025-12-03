@@ -1,11 +1,12 @@
 import { Navigate } from 'react-router-dom';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import UploadPhotos from '../components/UploadPhotos';
 import { galleryFolderKey } from '../constants';
 import { useAuth } from '../context/AuthContext';
 import { createGallery, deleteGallery as deleteGalleryApi, fetchGalleries, type GalleryDTO } from '../api/galleries';
 import { listFolderPhotos } from '../api/photos';
 import { useFolderPhotos } from '../hooks/useFolderPhotos';
+import GalleryAdminPanel from '../components/GalleryAdminPanel';
 
 const AdminGalleries = () => {
   const { user } = useAuth();
@@ -13,64 +14,93 @@ const AdminGalleries = () => {
   const [newGalleryName, setNewGalleryName] = useState('');
   const [selectedGalleryId, setSelectedGalleryId] = useState<string | null>(null);
   const [photoCounts, setPhotoCounts] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
+  const [creatingGallery, setCreatingGallery] = useState(false);
+  const [deletingGallerySlug, setDeletingGallerySlug] = useState<string | null>(null);
   const folderKey = selectedGalleryId ? galleryFolderKey(selectedGalleryId) : undefined;
   const { photos: selectedPhotos, setPhotos: setSelectedPhotos } = useFolderPhotos(folderKey);
 
-  useEffect(() => {
-    const load = async () => {
-      const data = await fetchGalleries();
-      setGalleries(data);
-      setSelectedGalleryId(prev => prev ?? data[0]?.slug ?? null);
-      const entries = await Promise.all(
-        data.map(async (g) => {
-          const photos = await listFolderPhotos(galleryFolderKey(g.slug));
-          return [g.slug, photos.length] as const;
-        })
-      );
-      setPhotoCounts(Object.fromEntries(entries));
-    };
-    load().catch((err) => console.error('No se pudieron cargar las galerías', err));
-  }, []);
-
-  const selectedGallery = useMemo(() => (
-    galleries.find(g => g.slug === selectedGalleryId) || null
-  ), [galleries, selectedGalleryId]);
-
-  const refreshCounts = async () => {
+  const refreshCounts = useCallback(async (source: GalleryDTO[]) => {
+    if (!source.length) {
+      setPhotoCounts({});
+      return;
+    }
     const entries = await Promise.all(
-      galleries.map(async g => {
+      source.map(async (g) => {
         const photos = await listFolderPhotos(galleryFolderKey(g.slug));
         return [g.slug, photos.length] as const;
       })
     );
     setPhotoCounts(Object.fromEntries(entries));
-  };
+  }, []);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        const data = await fetchGalleries();
+        setGalleries(data);
+        setSelectedGalleryId(prev => prev ?? data[0]?.slug ?? null);
+        await refreshCounts(data);
+      } catch (err) {
+        console.error('No se pudieron cargar las galerías', err);
+        setPhotoCounts({});
+      } finally {
+        setLoading(false);
+      }
+    };
+    load().catch(() => {
+      /* logged above */
+    });
+  }, [refreshCounts]);
+
+  const selectedGallery = useMemo(() => (
+    galleries.find(g => g.slug === selectedGalleryId) || null
+  ), [galleries, selectedGalleryId]);
+
+  useEffect(() => {
+    if (!selectedGalleryId) return;
+    setPhotoCounts(prev => {
+      const current = prev[selectedGalleryId];
+      const nextCount = selectedPhotos.length;
+      if (current === nextCount) {
+        return prev;
+      }
+      return { ...prev, [selectedGalleryId]: nextCount };
+    });
+  }, [selectedGalleryId, selectedPhotos.length]);
 
   const addGallery = async () => {
     const name = newGalleryName.trim();
     if (!name) return;
     try {
+      setCreatingGallery(true);
       const updated = await createGallery(name);
       setGalleries(updated);
       setNewGalleryName('');
       setSelectedGalleryId(updated[updated.length - 1]?.slug ?? null);
-      await refreshCounts();
+      await refreshCounts(updated);
     } catch (error) {
       alert(error instanceof Error ? error.message : 'No se pudo crear la galería');
+    } finally {
+      setCreatingGallery(false);
     }
   };
 
   const deleteGallery = async (slug: string) => {
     try {
+      setDeletingGallerySlug(slug);
       const updated = await deleteGalleryApi(slug);
       setGalleries(updated);
       if (selectedGalleryId === slug) {
         setSelectedGalleryId(updated[0]?.slug ?? null);
         setSelectedPhotos([]);
       }
-      await refreshCounts();
+      await refreshCounts(updated);
     } catch (error) {
       alert(error instanceof Error ? error.message : 'No se pudo eliminar la galería');
+    } finally {
+      setDeletingGallerySlug(null);
     }
   };
 
@@ -84,40 +114,19 @@ const AdminGalleries = () => {
       <p className="text-secondary">Crea, elimina y carga fotos para cada colección.</p>
 
       <div className="row g-4 align-items-start">
-        <section className="col-12 col-md-4">
-          <div className="card shadow-sm">
-            <div className="card-body">
-              <h3 className="h6">Nueva galería</h3>
-              <div className="d-flex gap-2 mb-3">
-                <input
-                  type="text"
-                  placeholder="Nombre de la galería"
-                  value={newGalleryName}
-                  onChange={e => setNewGalleryName(e.target.value)}
-                  className="form-control"
-                />
-                <button onClick={addGallery} className="btn btn-primary">Agregar</button>
-              </div>
-
-              <h3 className="h6">Existentes</h3>
-              <ul className="list-group">
-                {galleries.map(g => (
-                  <li key={g.slug} className="list-group-item d-flex justify-content-between align-items-center">
-                    <button
-                      onClick={() => setSelectedGalleryId(g.slug)}
-                      className={`btn btn-link text-decoration-none text-start flex-grow-1 ${selectedGalleryId === g.slug ? 'fw-semibold' : ''}`}
-                    >
-                      {g.name}
-                      <span className="badge text-bg-light ms-2">{photoCounts[g.slug] ?? 0}</span>
-                    </button>
-                    <button onClick={() => deleteGallery(g.slug)} className="btn btn-sm btn-outline-danger">Eliminar</button>
-                  </li>
-                ))}
-                {galleries.length === 0 && <li className="list-group-item text-secondary">No hay galerías aún.</li>}
-              </ul>
-            </div>
-          </div>
-        </section>
+        <GalleryAdminPanel
+          galleries={galleries}
+          selectedGalleryId={selectedGalleryId}
+          onSelectGallery={setSelectedGalleryId}
+          photoCounts={photoCounts}
+          newGalleryName={newGalleryName}
+          onNewGalleryNameChange={setNewGalleryName}
+          onAddGallery={addGallery}
+          onDeleteGallery={deleteGallery}
+          creatingGallery={creatingGallery}
+          deletingGallerySlug={deletingGallerySlug}
+          disabled={loading}
+        />
 
         <section className="col-12 col-md-8">
           {!selectedGallery && <p className="text-secondary">Selecciona una galería para ver y agregar fotos.</p>}
