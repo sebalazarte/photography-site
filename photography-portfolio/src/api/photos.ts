@@ -28,3 +28,12 @@ export const deletePhotoFromFolder = (folder: string, filename: string) =>
   request<StoredPhoto[]>(`/photos?folder=${encodeFolder(folder)}&filename=${encodeURIComponent(filename)}`, {
     method: 'DELETE',
   }).then(normalizePhotoUrls);
+
+export const updatePhotoOrder = (folder: string, order: string[]) =>
+  request<StoredPhoto[]>(`/photos/order`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ folder, order })
+  }).then(normalizePhotoUrls);

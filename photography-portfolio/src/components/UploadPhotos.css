@@ -91,6 +91,21 @@
   transform: scale(1.02);
 }
 
+.photo-item.draggable {
+  cursor: grab;
+  user-select: none;
+}
+
+.photo-item.is-dragging {
+  opacity: 0.65;
+  cursor: grabbing;
+}
+
+.photo-item.drag-over {
+  outline: 2px dashed #0d6efd;
+  outline-offset: 3px;
+}
+
 .photo-item img {
   width: 100%;
   height: 150px;

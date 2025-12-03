@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useId } from 'react';
 import type { StoredPhoto } from '../types/photos';
-import { deletePhotoFromFolder, listFolderPhotos, uploadToFolder } from '../api/photos';
+import { deletePhotoFromFolder, listFolderPhotos, updatePhotoOrder, uploadToFolder } from '../api/photos';
 
 interface UploadPhotosProps {
   folder: string;
@@ -13,6 +13,9 @@ const UploadPhotos: React.FC<UploadPhotosProps> = ({ folder, photos, onPhotosCha
   const [localPhotos, setLocalPhotos] = useState<StoredPhoto[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [savingOrder, setSavingOrder] = useState(false);
   const inputId = useId();
 
   const effectivePhotos = photos ?? localPhotos;
@@ -83,6 +86,80 @@ const UploadPhotos: React.FC<UploadPhotosProps> = ({ folder, photos, onPhotosCha
     }
   };
 
+  const handlePhotoDragStart = useCallback((event: React.DragEvent<HTMLDivElement>, photoId: string) => {
+    if (savingOrder) {
+      event.preventDefault();
+      return;
+    }
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', photoId);
+    setDraggedId(photoId);
+  }, [savingOrder]);
+
+  const handlePhotoDragOver = useCallback((event: React.DragEvent<HTMLDivElement>, photoId: string) => {
+    if (!draggedId || draggedId === photoId) {
+      event.preventDefault();
+      return;
+    }
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    if (dragOverId !== photoId) {
+      setDragOverId(photoId);
+    }
+  }, [draggedId, dragOverId]);
+
+  const handlePhotoDragLeave = useCallback((event: React.DragEvent<HTMLDivElement>, photoId: string) => {
+    event.preventDefault();
+    if (dragOverId === photoId) {
+      setDragOverId(null);
+    }
+  }, [dragOverId]);
+
+  const handlePhotoDragEnd = useCallback(() => {
+    setDraggedId(null);
+    setDragOverId(null);
+  }, []);
+
+  const handlePhotoDrop = useCallback(async (event: React.DragEvent<HTMLDivElement>, targetId: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!draggedId || draggedId === targetId) {
+      setDragOverId(null);
+      setDraggedId(null);
+      return;
+    }
+
+    const previousOrder = [...effectivePhotos];
+    const fromIndex = previousOrder.findIndex(photo => photo.id === draggedId);
+    const toIndex = previousOrder.findIndex(photo => photo.id === targetId);
+
+    if (fromIndex === -1 || toIndex === -1) {
+      setDragOverId(null);
+      setDraggedId(null);
+      return;
+    }
+
+    const reordered = [...previousOrder];
+    const [moved] = reordered.splice(fromIndex, 1);
+    reordered.splice(toIndex, 0, moved);
+
+    sync(reordered);
+
+    try {
+      setSavingOrder(true);
+      const refreshed = await updatePhotoOrder(folder, reordered.map(photo => photo.id));
+      sync(refreshed);
+    } catch (error) {
+      console.error('No se pudo guardar el nuevo orden de fotos', error);
+      alert(error instanceof Error ? error.message : 'No se pudo guardar el nuevo orden de fotos');
+      sync(previousOrder);
+    } finally {
+      setSavingOrder(false);
+      setDragOverId(null);
+      setDraggedId(null);
+    }
+  }, [draggedId, effectivePhotos, folder, sync]);
+
 
   return (
     <div className="upload-container">
@@ -126,10 +203,28 @@ const UploadPhotos: React.FC<UploadPhotosProps> = ({ folder, photos, onPhotosCha
       {showPreview && effectivePhotos.length > 0 && (
         <div className="uploaded-photos">
           <h3 className="h5 mb-3">Fotos subidas ({effectivePhotos.length})</h3>
+          <p className="text-secondary small mb-2">Arrastra y suelta para modificar el orden de las fotos.</p>
+          {savingOrder && <p className="text-info small mb-3">Guardando nuevo orden…</p>}
           <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
-            {effectivePhotos.map(photo => (
-              <div key={photo.id} className="col">
-                <div className="photo-item card h-100">
+            {effectivePhotos.map(photo => {
+              const isDraggingThis = draggedId === photo.id;
+              const isDragOver = dragOverId === photo.id;
+              const cardClasses = `photo-item card h-100 draggable${isDraggingThis ? ' is-dragging' : ''}${isDragOver ? ' drag-over' : ''}`;
+
+              return (
+                <div key={photo.id} className="col">
+                  <div
+                    className={cardClasses}
+                    draggable={!uploading && !savingOrder}
+                    onDragStart={(event) => handlePhotoDragStart(event, photo.id)}
+                    onDragOver={(event) => handlePhotoDragOver(event, photo.id)}
+                    onDragLeave={(event) => handlePhotoDragLeave(event, photo.id)}
+                    onDrop={(event) => void handlePhotoDrop(event, photo.id)}
+                    onDragEnd={handlePhotoDragEnd}
+                    role="button"
+                    aria-grabbed={isDraggingThis}
+                    tabIndex={0}
+                  >
                   <img src={photo.url} alt={photo.originalName} className="card-img-top" />
                   <div className="photo-info card-body d-flex justify-content-between align-items-center">
                     <span className="photo-name" title={photo.originalName}>{photo.originalName}</span>
@@ -142,7 +237,8 @@ const UploadPhotos: React.FC<UploadPhotosProps> = ({ folder, photos, onPhotosCha
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

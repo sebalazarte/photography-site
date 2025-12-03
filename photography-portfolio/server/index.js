@@ -226,6 +226,40 @@ app.delete('/api/photos', folderMiddleware, async (req, res, next) => {
   }
 });
 
+app.put('/api/photos/order', async (req, res, next) => {
+  try {
+    const folder = req.body?.folder;
+    const order = req.body?.order;
+    if (typeof folder !== 'string' || !Array.isArray(order)) {
+      return res.status(400).json({ message: 'folder y order requeridos' });
+    }
+
+    const info = sanitizeFolderRequest(folder);
+    await fsp.mkdir(info.folderPath, { recursive: true });
+    const fileNames = await fsp.readdir(info.folderPath);
+    const fileSet = new Set(fileNames);
+    const seen = new Set();
+    const sanitizedOrder = order.filter((id) => {
+      if (!fileSet.has(id) || seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
+
+    const allOrders = await readPhotoOrder();
+    if (sanitizedOrder.length) {
+      allOrders[info.orderKey] = sanitizedOrder;
+    } else {
+      delete allOrders[info.orderKey];
+    }
+    await writePhotoOrder(allOrders);
+
+    const files = await listFiles(info);
+    res.json(files);
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.get('/api/galleries', async (_req, res, next) => {
   try {
     await ensureBaseFolders();
