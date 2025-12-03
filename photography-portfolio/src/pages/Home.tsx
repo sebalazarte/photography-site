@@ -9,7 +9,6 @@ const Home = () => {
     <div className="home-page">
       <ImageGallery folder={HOME_FOLDER} photos={photos} />
       {loading && <p className="text-muted">Cargando galería...</p>}
-      <footer className="home-footer text-uppercase">Matsuya</footer>
     </div>
   );
 };

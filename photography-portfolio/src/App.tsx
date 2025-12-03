@@ -3,12 +3,12 @@ import './components/UploadPhotos.css';
 import { NavLink, Route, Routes } from 'react-router-dom';
 import Home from './pages/Home';
 import Galleries from './pages/Galleries';
-import About from './pages/About';
 import Contact from './pages/Contact';
 import Login from './pages/Login';
 import AdminHome from './pages/AdminHome';
 import AdminGalleries from './pages/AdminGalleries';
 import { useAuth } from './context/AuthContext';
+import { CONTACT_EMAIL, CONTACT_NAME, CONTACT_PHONE, CONTACT_PHONE_WHATSAPP } from './config/contact';
 
 function App() {
   const { user, logout } = useAuth();
@@ -18,7 +18,7 @@ function App() {
       <header className="App-header mb-4">
         <nav className="navbar navbar-expand-md bg-body-tertiary">
           <div className="container">
-            <NavLink to="/" className="navbar-brand"><div className="nav nav-name text-uppercase">Seba Lazarte</div></NavLink>
+            <NavLink to="/" className="navbar-brand"><div className="nav nav-name text-uppercase">{CONTACT_NAME}</div></NavLink>
             <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
               <span className="navbar-toggler-icon"></span>
             </button>
@@ -29,9 +29,6 @@ function App() {
                 </li>
                 <li className="nav-item">
                   <NavLink to="/galleries" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>Galerías</NavLink>
-                </li>
-                <li className="nav-item">
-                  <NavLink to="/about" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>Acerca de mí</NavLink>
                 </li>
                 <li className="nav-item">
                   <NavLink to="/contact" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>Contacto</NavLink>
@@ -82,7 +79,6 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/galleries" element={<Galleries />} />
-            <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/login" element={<Login />} />
             <Route path="/admin/home" element={<AdminHome />} />
@@ -90,6 +86,26 @@ function App() {
           </Routes>
         </div>
       </main>
+      <footer className="App-footer border-top mt-5 pt-4">
+        <div className="container d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
+          <div>
+            <span className="text-uppercase fw-semibold">{CONTACT_NAME}</span>
+          </div>
+          <div className="d-flex flex-column flex-md-row gap-2">
+            <a
+              className="link-dark text-decoration-none"
+              href={CONTACT_PHONE_WHATSAPP}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              WhatsApp: {CONTACT_PHONE}
+            </a>
+            <a className="link-dark text-decoration-none" href={`mailto:${CONTACT_EMAIL}`}>
+              Email: {CONTACT_EMAIL}
+            </a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

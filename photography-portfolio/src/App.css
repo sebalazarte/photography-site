@@ -203,6 +203,21 @@ body {
   padding-top: 1rem;
 }
 
+.App-footer {
+  font-family: 'Source Code Pro', monospace;
+  font-size: 0.95rem;
+}
+
+.App-footer a {
+  transition: color 0.2s ease;
+}
+
+.App-footer a:hover,
+.App-footer a:focus-visible {
+  color: #0a58ca;
+  text-decoration: underline;
+}
+
 
 
   .home-hero {
