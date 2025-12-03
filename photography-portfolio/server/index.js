@@ -130,41 +130,55 @@ const listFiles = async (info) => {
     }
 
     const allOrders = await readPhotoOrder();
-    const folderOrders = { ...(allOrders[info.orderKey] ?? {}) };
-    const existingIds = new Set(items.map(item => item.id));
+    const rawOrder = allOrders[info.orderKey];
+    let orderList;
     let updated = false;
 
-    // Assign order to new photos (newest first by default)
-    const timestamp = Date.now();
-    items.forEach((item, index) => {
-      if (typeof folderOrders[item.id] !== 'number') {
-        folderOrders[item.id] = timestamp + (items.length - index);
-        updated = true;
-      }
-    });
+    if (Array.isArray(rawOrder)) {
+      orderList = [...rawOrder];
+    } else if (rawOrder && typeof rawOrder === 'object') {
+      orderList = Object.entries(rawOrder)
+        .sort(([, a], [, b]) => (b ?? 0) - (a ?? 0))
+        .map(([id]) => id);
+      updated = true;
+    } else {
+      orderList = [];
+    }
 
-    // Remove orders for files that no longer exist
-    Object.keys(folderOrders).forEach((id) => {
-      if (!existingIds.has(id)) {
-        delete folderOrders[id];
-        updated = true;
-      }
-    });
+    const existingIds = new Set(items.map(item => item.id));
+    const filteredOrder = orderList.filter(id => existingIds.has(id));
+    if (filteredOrder.length !== orderList.length) {
+      updated = true;
+    }
+    orderList = filteredOrder;
+    const orderSet = new Set(orderList);
 
-    if (updated || allOrders[info.orderKey] !== folderOrders) {
-      if (Object.keys(folderOrders).length) {
-        allOrders[info.orderKey] = folderOrders;
-      } else {
-        delete allOrders[info.orderKey];
-      }
+    const missingItems = items.filter(item => !orderSet.has(item.id));
+    if (missingItems.length) {
+      missingItems.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+      orderList = missingItems.map(item => item.id).concat(orderList);
+      updated = true;
+    }
+
+    if (orderList.length) {
+      allOrders[info.orderKey] = orderList;
+    } else if (allOrders[info.orderKey]) {
+      delete allOrders[info.orderKey];
+      updated = true;
+    }
+
+    if (updated) {
       await writePhotoOrder(allOrders);
     }
 
+    const positionMap = new Map(orderList.map((id, index) => [id, index]));
+
     return items
-      .map(item => ({ ...item, order: folderOrders[item.id] }))
+      .map(item => ({ ...item, order: positionMap.get(item.id) ?? null }))
       .sort((a, b) => {
-        const orderDiff = (b.order ?? 0) - (a.order ?? 0);
-        if (orderDiff !== 0) return orderDiff;
+        const posA = positionMap.has(a.id) ? positionMap.get(a.id) : Number.MAX_SAFE_INTEGER;
+        const posB = positionMap.has(b.id) ? positionMap.get(b.id) : Number.MAX_SAFE_INTEGER;
+        if (posA !== posB) return posA - posB;
         const dateDiff = new Date(b.uploadedAt) - new Date(a.uploadedAt);
         if (dateDiff !== 0) return dateDiff;
         return a.id.localeCompare(b.id);
