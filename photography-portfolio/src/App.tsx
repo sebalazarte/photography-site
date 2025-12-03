@@ -25,7 +25,7 @@ function App() {
             <div className="collapse navbar-collapse" id="mainNav">
               <ul className="navbar-nav ms-auto mb-2 mb-md-0">
                 <li className="nav-item">
-                  <NavLink to="/" end className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>Home</NavLink>
+                  <NavLink to="/" end className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>Inicio</NavLink>
                 </li>
                 <li className="nav-item">
                   <NavLink to="/galleries" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>Galerías</NavLink>

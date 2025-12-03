@@ -55,18 +55,11 @@ const About: React.FC = () => {
         </section>
 
         <section className="col-12 col-md-8">
-          <textarea
-            placeholder="Escribe aquí tu texto..."
-            value={data.text}
-            onChange={e => setData(prev => ({ ...prev, text: e.target.value }))}
-            className="form-control"
-            style={{ minHeight: 220, resize: 'vertical' }}
-          />
-
-          <div className="mt-3 d-flex align-items-center gap-2">
-            <button onClick={save} className="btn btn-primary">Guardar</button>
-            {saved && <span className="text-success">Guardado</span>}
-          </div>
+          <p>Soy Licenciado en Análisis de Sistemas y durante más de 20 años me dediqué al mundo de la programación. La tecnología siempre fue parte de mi vida, pero con el tiempo sentí la necesidad de explorar nuevos caminos y encontrar un espacio donde pudiera expresarme de otra manera.</p>
+          <p>En 2017 descubrí la fotografía como un pasatiempo, y pronto me di cuenta de que no era solo un hobby: era una pasión. Cada vez que tomo una cámara, no lo vivo como un trabajo, sino como una experiencia que me conecta con el entorno y las personas.</p>
+          <p>Lo que comenzó como una actividad recreativa se transformó en una profesión que disfruto plenamente. Hoy combino mi formación técnica con una mirada creativa, dedicándome de manera más profesional a capturar momentos, historias y detalles que muchas veces pasan desapercibidos.</p>
+          <p>Mi objetivo es capturar momentos auténticos y contar historias a través de mis imágenes, buscando siempre transmitir emociones y sensaciones que perduren en el tiempo.</p>
+          <p>La fotografía me enseñó que siempre hay una nueva forma de mirar el mundo, y esa es la visión que quiero compartir contigo.</p>
         </section>
       </div>
     </div>
