@@ -300,6 +300,26 @@ app.post('/api/galleries', async (req, res, next) => {
   }
 });
 
+app.put('/api/galleries/:slug', async (req, res, next) => {
+  try {
+    const { slug } = req.params;
+    const name = (req.body?.name || '').trim();
+    if (!name) return res.status(400).json({ message: 'nombre requerido' });
+
+    const galleries = await readGalleries();
+    const index = galleries.findIndex((g) => g.slug === slug);
+    if (index === -1) {
+      return res.status(404).json({ message: 'Galería no encontrada' });
+    }
+
+    galleries[index] = { ...galleries[index], name };
+    await writeGalleries(galleries);
+    res.json(galleries);
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.delete('/api/galleries/:slug', async (req, res, next) => {
   try {
     const { slug } = req.params;

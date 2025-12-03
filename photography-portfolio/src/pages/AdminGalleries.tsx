@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import UploadPhotos from '../components/UploadPhotos';
 import { galleryFolderKey } from '../constants';
 import { useAuth } from '../context/AuthContext';
-import { createGallery, deleteGallery as deleteGalleryApi, fetchGalleries, type GalleryDTO } from '../api/galleries';
+import { createGallery, deleteGallery as deleteGalleryApi, fetchGalleries, updateGalleryName, type GalleryDTO } from '../api/galleries';
 import { listFolderPhotos } from '../api/photos';
 import { useFolderPhotos } from '../hooks/useFolderPhotos';
 import GalleryAdminPanel from '../components/GalleryAdminPanel';
@@ -17,6 +17,7 @@ const AdminGalleries = () => {
   const [loading, setLoading] = useState(true);
   const [creatingGallery, setCreatingGallery] = useState(false);
   const [deletingGallerySlug, setDeletingGallerySlug] = useState<string | null>(null);
+  const [renamingSlug, setRenamingSlug] = useState<string | null>(null);
   const folderKey = selectedGalleryId ? galleryFolderKey(selectedGalleryId) : undefined;
   const { photos: selectedPhotos, setPhotos: setSelectedPhotos } = useFolderPhotos(folderKey);
 
@@ -104,6 +105,21 @@ const AdminGalleries = () => {
     }
   };
 
+  const renameGallery = async (slug: string, name: string) => {
+    try {
+      setRenamingSlug(slug);
+      const updated = await updateGalleryName(slug, name);
+      setGalleries(updated);
+      await refreshCounts(updated);
+      return true;
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'No se pudo renombrar la galería');
+      return false;
+    } finally {
+      setRenamingSlug(null);
+    }
+  };
+
   if (!user) {
     return <Navigate to="/login" replace />;
   }
@@ -123,8 +139,10 @@ const AdminGalleries = () => {
           onNewGalleryNameChange={setNewGalleryName}
           onAddGallery={addGallery}
           onDeleteGallery={deleteGallery}
+          onRenameGallery={renameGallery}
           creatingGallery={creatingGallery}
           deletingGallerySlug={deletingGallerySlug}
+          renamingSlug={renamingSlug}
           disabled={loading}
         />
 
