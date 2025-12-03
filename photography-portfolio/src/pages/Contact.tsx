@@ -1,27 +1,51 @@
-import { useEffect, useState } from 'react';
+import { useRef, useState } from 'react';
 import type React from 'react';
 import { CONTACT_EMAIL, CONTACT_NAME, CONTACT_PHONE, CONTACT_PHONE_WHATSAPP } from '../config/contact';
-
-type AboutData = { photo?: string };
-
-const ABOUT_STORAGE_KEY = 'pp_about_v1';
+import { useAuth } from '../context/AuthContext';
+import { useFolderPhotos } from '../hooks/useFolderPhotos';
+import { CONTACT_FOLDER } from '../constants';
+import { deletePhotoFromFolder, uploadToFolder } from '../api/photos';
 
 const Contact: React.FC = () => {
-  const [aboutData, setAboutData] = useState<AboutData>({});
+  const [status, setStatus] = useState<'idle' | 'saving' | 'error'>('idle');
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const { user } = useAuth();
+  const { photos, setPhotos, loading, error } = useFolderPhotos(CONTACT_FOLDER);
+  const mainPhoto = photos[0];
 
-  useEffect(() => {
+  const handlePhotoSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || event.target.files.length === 0) return;
     try {
-      const raw = localStorage.getItem(ABOUT_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed === 'object' && parsed.photo) {
-          setAboutData({ photo: parsed.photo as string });
-        }
+      setStatus('saving');
+      const updated = await uploadToFolder(CONTACT_FOLDER, event.target.files);
+      setPhotos(updated);
+      setStatus('idle');
+    } catch (err) {
+      console.error('No se pudo subir la foto de contacto', err);
+      setStatus('error');
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
       }
-    } catch (error) {
-      console.warn('No se pudo cargar la foto de Acerca de mí', error);
     }
-  }, []);
+  };
+
+  const handleRemovePhoto = async () => {
+    if (!mainPhoto) return;
+    try {
+      setStatus('saving');
+      const updated = await deletePhotoFromFolder(CONTACT_FOLDER, mainPhoto.filename);
+      setPhotos(updated);
+      setStatus('idle');
+    } catch (err) {
+      console.error('No se pudo eliminar la foto de contacto', err);
+      setStatus('error');
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
 
   return (
     <div className="font-monospace">
@@ -31,18 +55,59 @@ const Contact: React.FC = () => {
           <div className="col-12 col-md-4">
             <div className="card shadow-sm text-center">
               <div className="card-body">
-                {aboutData.photo ? (
+                {loading ? (
+                  <div
+                    style={{ height: 320 }}
+                    className="d-grid place-items-center text-secondary bg-light rounded"
+                  >
+                    Cargando…
+                  </div>
+                ) : mainPhoto ? (
                   <img
-                    src={aboutData.photo}
+                    src={mainPhoto.url}
                     alt={CONTACT_NAME}
-                    style={{ width: '100%', height: 240, objectFit: 'cover', borderRadius: 6 }}
+                    style={{ width: '100%', height: 320, objectFit: 'contain', borderRadius: 6 }}
                   />
                 ) : (
                   <div
-                    style={{ height: 240 }}
+                    style={{ height: 320 }}
                     className="d-grid place-items-center text-secondary bg-light rounded"
                   >
                     Sin foto
+                  </div>
+                )}
+                {error && !loading && (
+                  <span className="text-danger small d-block mt-2">{error}</span>
+                )}
+                {user && (
+                  <div className="mt-3 d-flex flex-column gap-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={handlePhotoSelect}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-primary"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={status === 'saving'}
+                    >
+                      {mainPhoto ? 'Cambiar foto' : 'Subir foto'}
+                    </button>
+                    {mainPhoto && (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-secondary"
+                        onClick={handleRemovePhoto}
+                        disabled={status === 'saving'}
+                      >
+                        Quitar foto
+                      </button>
+                    )}
+                    {status === 'saving' && <span className="text-info small">Guardando…</span>}
+                    {status === 'error' && <span className="text-danger small">No se pudo procesar la imagen.</span>}
                   </div>
                 )}
               </div>

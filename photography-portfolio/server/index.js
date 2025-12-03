@@ -11,14 +11,17 @@ const __dirname = path.dirname(__filename);
 const PORT = process.env.PORT || 4000;
 const ROOT = path.resolve(__dirname, '..');
 const SRC_DIR = path.join(ROOT, 'src');
-const HOME_DIR = path.join(SRC_DIR, 'Home');
-const GALLERIES_DIR = path.join(SRC_DIR, 'Galeries');
+const PHOTOS_DIR = path.join(SRC_DIR, 'photos');
+const HOME_DIR = path.join(PHOTOS_DIR, 'home');
+const GALLERIES_DIR = path.join(PHOTOS_DIR, 'gallerries');
+const CONTACT_DIR = path.join(PHOTOS_DIR, 'contact');
 const GALLERIES_DB = path.join(__dirname, 'galleries.json');
 const PHOTO_ORDER_DB = path.join(__dirname, 'photo-order.json');
 
 const ensureBaseFolders = async () => {
   await fsp.mkdir(HOME_DIR, { recursive: true });
   await fsp.mkdir(GALLERIES_DIR, { recursive: true });
+  await fsp.mkdir(CONTACT_DIR, { recursive: true });
   await readPhotoOrder();
 };
 
@@ -67,7 +70,7 @@ const sanitizeFolderRequest = (folderParam = '') => {
   if (normalized[0] === 'home' && normalized.length === 1) {
     return {
       folderPath: HOME_DIR,
-      publicPath: 'Home',
+      publicPath: path.join('Photos', 'Home').replace(/\\/g, '/'),
       orderKey: 'home'
     };
   }
@@ -75,8 +78,15 @@ const sanitizeFolderRequest = (folderParam = '') => {
     const slug = normalized[1];
     return {
       folderPath: path.join(GALLERIES_DIR, slug),
-      publicPath: path.join('Galeries', slug).replace(/\\/g, '/'),
+      publicPath: path.join('Photos', 'Gallerries', slug).replace(/\\/g, '/'),
       orderKey: `galleries/${slug}`
+    };
+  }
+  if (normalized[0] === 'contact' && normalized.length === 1) {
+    return {
+      folderPath: CONTACT_DIR,
+      publicPath: path.join('Photos', 'Contact').replace(/\\/g, '/'),
+      orderKey: 'contact'
     };
   }
   throw new Error('folder inválido');

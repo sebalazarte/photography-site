@@ -32,10 +32,10 @@ const UploadPhotos: React.FC<UploadPhotosProps> = ({ folder, photos, onPhotosCha
     listFolderPhotos(folder).then(setLocalPhotos).catch(() => setLocalPhotos([]));
   }, [folder, photos]);
 
-  const handleFiles = useCallback(async (files: FileList) => {
+  const handleFiles = useCallback(async (filesInput: FileList | File[]) => {
     try {
       setUploading(true);
-      const updated = await uploadToFolder(folder, files);
+      const updated = await uploadToFolder(folder, filesInput);
       sync(updated);
     } catch (error) {
       alert(error instanceof Error ? error.message : 'No se pudieron subir las fotos');
@@ -59,14 +59,33 @@ const UploadPhotos: React.FC<UploadPhotosProps> = ({ folder, photos, onPhotosCha
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'copy';
+    }
   }, []);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      void handleFiles(e.dataTransfer.files);
+    const dt = e.dataTransfer;
+    if (!dt) return;
+
+    let files: FileList | File[] | null = null;
+    if (dt.files && dt.files.length > 0) {
+      files = dt.files;
+    } else if (dt.items && dt.items.length > 0) {
+      const extracted = Array.from(dt.items)
+        .filter(item => item.kind === 'file')
+        .map(item => item.getAsFile())
+        .filter((file): file is File => Boolean(file));
+      if (extracted.length > 0) {
+        files = extracted;
+      }
+    }
+
+    if (files && files.length > 0) {
+      void handleFiles(files);
     }
   }, [handleFiles]);
 

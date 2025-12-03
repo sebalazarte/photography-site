@@ -10,6 +10,26 @@
   overflow: hidden;
 }
 
+.masonry-item.draggable {
+  cursor: grab;
+  user-select: none;
+  position: relative;
+}
+
+.masonry-item.draggable.is-dragging {
+  opacity: 0.65;
+  cursor: grabbing;
+}
+
+.masonry-item.draggable.drag-over::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px dashed #0d6efd;
+  border-radius: 6px;
+  pointer-events: none;
+}
+
 .masonry-item__trigger {
   border: none;
   padding: 0;
