@@ -1,3 +1,8 @@
 {
-  "galleries": []
+  "galleries": [
+    {
+      "name": "Cony",
+      "slug": "cony"
+    }
+  ]
 }

@@ -33,5 +33,6 @@ venv/
 .venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv-3.*/.venv......
 ```
 photography-portfolio/src/Home/*
-photography-portfolio/src/Galleries/*
+photography-portfolio/src/Galeries/**
+!photography-portfolio/src/Galeries/.gitkeep
 

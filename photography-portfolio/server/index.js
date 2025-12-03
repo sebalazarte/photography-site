@@ -14,10 +14,12 @@ const SRC_DIR = path.join(ROOT, 'src');
 const HOME_DIR = path.join(SRC_DIR, 'Home');
 const GALLERIES_DIR = path.join(SRC_DIR, 'Galeries');
 const GALLERIES_DB = path.join(__dirname, 'galleries.json');
+const PHOTO_ORDER_DB = path.join(__dirname, 'photo-order.json');
 
 const ensureBaseFolders = async () => {
   await fsp.mkdir(HOME_DIR, { recursive: true });
   await fsp.mkdir(GALLERIES_DIR, { recursive: true });
+  await readPhotoOrder();
 };
 
 const readGalleries = async () => {
@@ -34,6 +36,24 @@ const writeGalleries = async (galleries) => {
   await fsp.writeFile(GALLERIES_DB, JSON.stringify({ galleries }, null, 2));
 };
 
+const readPhotoOrder = async () => {
+  try {
+    const data = await fsp.readFile(PHOTO_ORDER_DB, 'utf-8');
+    const parsed = JSON.parse(data);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      await fsp.writeFile(PHOTO_ORDER_DB, JSON.stringify({}, null, 2));
+      return {};
+    }
+    throw error;
+  }
+};
+
+const writePhotoOrder = async (orderMap) => {
+  await fsp.writeFile(PHOTO_ORDER_DB, JSON.stringify(orderMap, null, 2));
+};
+
 const slugify = (str) =>
   str
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -47,14 +67,16 @@ const sanitizeFolderRequest = (folderParam = '') => {
   if (normalized[0] === 'home' && normalized.length === 1) {
     return {
       folderPath: HOME_DIR,
-      publicPath: 'Home'
+      publicPath: 'Home',
+      orderKey: 'home'
     };
   }
   if (normalized[0] === 'galleries' && normalized[1]) {
     const slug = normalized[1];
     return {
       folderPath: path.join(GALLERIES_DIR, slug),
-      publicPath: path.join('Galeries', slug).replace(/\\/g, '/')
+      publicPath: path.join('Galeries', slug).replace(/\\/g, '/'),
+      orderKey: `galleries/${slug}`
     };
   }
   throw new Error('folder inválido');
@@ -87,7 +109,7 @@ const upload = multer({ storage });
 const listFiles = async (info) => {
   try {
     const files = await fsp.readdir(info.folderPath);
-    const items = await Promise.all(files.map(async (file) => {
+    let items = await Promise.all(files.map(async (file) => {
       const stat = await fsp.stat(path.join(info.folderPath, file));
       if (!stat.isFile()) return null;
       const [, original = file] = file.split('__');
@@ -100,9 +122,63 @@ const listFiles = async (info) => {
         size: stat.size
       };
     }));
+
+    items = items.filter(Boolean).sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+
+    if (!info.orderKey) {
+      return items;
+    }
+
+    const allOrders = await readPhotoOrder();
+    const folderOrders = { ...(allOrders[info.orderKey] ?? {}) };
+    const existingIds = new Set();
+    const missingIds = [];
+    let updated = false;
+
+    items.forEach((item) => {
+      existingIds.add(item.id);
+      if (typeof folderOrders[item.id] !== 'number') {
+        missingIds.push(item.id);
+      }
+    });
+
+    if (missingIds.length) {
+      const maxOrder = Object.values(folderOrders)
+        .filter(value => typeof value === 'number')
+        .reduce((prev, value) => Math.max(prev, value), 0);
+      let nextOrder = maxOrder;
+      missingIds.reverse().forEach((id) => {
+        nextOrder += 1;
+        folderOrders[id] = nextOrder;
+      });
+      updated = true;
+    }
+
+    Object.keys(folderOrders).forEach((id) => {
+      if (!existingIds.has(id)) {
+        delete folderOrders[id];
+        updated = true;
+      }
+    });
+
+    if (updated) {
+      if (Object.keys(folderOrders).length) {
+        allOrders[info.orderKey] = folderOrders;
+      } else {
+        delete allOrders[info.orderKey];
+      }
+      await writePhotoOrder(allOrders);
+    }
+
     return items
-      .filter(Boolean)
-      .sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+      .map(item => ({ ...item, order: folderOrders[item.id] }))
+      .sort((a, b) => {
+        const orderDiff = (b.order ?? 0) - (a.order ?? 0);
+        if (orderDiff !== 0) return orderDiff;
+        const dateDiff = new Date(b.uploadedAt) - new Date(a.uploadedAt);
+        if (dateDiff !== 0) return dateDiff;
+        return a.id.localeCompare(b.id);
+      });
   } catch (error) {
     if (error.code === 'ENOENT') return [];
     throw error;
