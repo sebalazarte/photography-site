@@ -179,7 +179,12 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ folder, photos }) => {
               onClick={() => openModal(index)}
               disabled={savingOrder}
             >
-              <img src={photo.url} alt={photo.originalName} />
+              <img
+                src={photo.url}
+                alt={photo.originalName}
+                loading={index < 4 ? 'eager' : 'lazy'}
+                decoding="async"
+              />
             </button>
           </figure>
         );

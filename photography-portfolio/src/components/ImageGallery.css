@@ -45,10 +45,9 @@
 
 .masonry-item img {
   width: 100%;
-  height: auto;      /* mantiene el aspecto original */
-  max-height: 376px; /* tope de alto, sin deformar */
+  height: auto;
   display: block;
-  object-fit: cover; /* opcional: recorta si supera el alto */
+  border-radius: 6px;
 }
 
 @media (min-width: 640px) {
