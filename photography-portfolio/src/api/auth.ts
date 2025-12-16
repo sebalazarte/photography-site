@@ -15,6 +15,7 @@ type ParseUser = {
   phone?: string;
   whatsapp?: string;
   sessionToken?: string;
+  acercaDe?: string;
 };
 
 export type AuthenticatedUser = {
@@ -24,6 +25,7 @@ export type AuthenticatedUser = {
   name?: string;
   phone?: string;
   whatsapp?: string;
+  about?: string;
 };
 
 export type LoginResult = {
@@ -38,6 +40,7 @@ const mapParseUser = (user: ParseUser): AuthenticatedUser => ({
   name: user.name,
   phone: user.phone,
   whatsapp: user.whatsapp,
+  about: user.acercaDe,
 });
 
 export const parseLogin = async (username: string, password: string): Promise<LoginResult> => {

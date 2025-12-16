@@ -3,12 +3,19 @@ const PARSE_APP_ID = import.meta.env.VITE_PARSE_APP_ID ?? '';
 const PARSE_REST_KEY = import.meta.env.VITE_PARSE_REST_KEY ?? '';
 const PARSE_JS_KEY = import.meta.env.VITE_PARSE_JS_KEY ?? '';
 let parseSessionToken = import.meta.env.VITE_PARSE_SESSION_TOKEN ?? '';
+let parseContentOwnerId = '';
 
 export const setParseSessionToken = (token: string | null | undefined) => {
   parseSessionToken = token ?? '';
 };
 
 export const getParseSessionToken = () => parseSessionToken;
+
+export const setParseContentOwner = (ownerId: string | null | undefined) => {
+  parseContentOwnerId = ownerId ?? '';
+};
+
+export const getParseContentOwner = () => parseContentOwnerId;
 
 export const absolutizeFromApi = (maybeAbsolute: string) => maybeAbsolute;
 

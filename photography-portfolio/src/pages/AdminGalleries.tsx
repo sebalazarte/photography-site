@@ -22,6 +22,11 @@ const AdminGalleries = () => {
   const { photos: selectedPhotos, setPhotos: setSelectedPhotos } = useFolderPhotos(folderKey);
 
   const refreshCounts = useCallback(async (source: GalleryDTO[]) => {
+    const ownerId = user?.id;
+    if (!ownerId) {
+      setPhotoCounts({});
+      return;
+    }
     if (!source.length) {
       setPhotoCounts({});
       return;
@@ -33,13 +38,19 @@ const AdminGalleries = () => {
       })
     );
     setPhotoCounts(Object.fromEntries(entries));
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
+    if (!user?.id) {
+      setGalleries([]);
+      setSelectedGalleryId(null);
+      setPhotoCounts({});
+      return;
+    }
     const load = async () => {
       try {
         setLoading(true);
-        const data = await fetchGalleries();
+        const data = await fetchGalleries(user.id);
         setGalleries(data);
         setSelectedGalleryId(prev => prev ?? data[0]?.slug ?? null);
         await refreshCounts(data);
@@ -53,7 +64,7 @@ const AdminGalleries = () => {
     load().catch(() => {
       /* logged above */
     });
-  }, [refreshCounts]);
+  }, [refreshCounts, user?.id]);
 
   const selectedGallery = useMemo(() => (
     galleries.find(g => g.slug === selectedGalleryId) || null

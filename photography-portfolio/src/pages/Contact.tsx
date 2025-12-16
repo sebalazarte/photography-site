@@ -12,6 +12,11 @@ const Contact: React.FC = () => {
   const phoneLabel = profile?.phone ?? profile?.whatsapp;
   const whatsappLink = formatWhatsappLink(profile?.whatsapp);
   const hasContactMethods = Boolean(email || (whatsappLink && phoneLabel));
+  const aboutContent = (profile?.about ?? '').trim() || '';
+  const aboutParagraphs = aboutContent
+    .split(/\r?\n\s*\r?\n/)
+    .map(paragraph => paragraph.trim())
+    .filter(Boolean);
 
   return (
     <div className="font-monospace">
@@ -23,11 +28,9 @@ const Contact: React.FC = () => {
           </div>
 
           <div className="col-12 col-md-8">
-            <p>Soy Licenciado en Análisis de Sistemas y durante más de 20 años me dediqué al mundo de la programación. La tecnología siempre fue parte de mi vida, pero con el tiempo sentí la necesidad de explorar nuevos caminos y encontrar un espacio donde pudiera expresarme de otra manera.</p>
-            <p>En 2017 descubrí la fotografía como un pasatiempo, y pronto me di cuenta de que no era solo un hobby: era una pasión. Cada vez que tomo una cámara, no lo vivo como un trabajo, sino como una experiencia que me conecta con el entorno y las personas.</p>
-            <p>Lo que comenzó como una actividad recreativa se transformó en una profesión que disfruto plenamente. Hoy combino mi formación técnica con una mirada creativa, dedicándome de manera más profesional a capturar momentos, historias y detalles que muchas veces pasan desapercibidos.</p>
-            <p>Mi objetivo es capturar momentos auténticos y contar historias a través de mis imágenes, buscando siempre transmitir emociones y sensaciones que perduren en el tiempo.</p>
-            <p>La fotografía me enseñó que siempre hay una nueva forma de mirar el mundo, y esa es la visión que quiero compartir contigo.</p>
+            {aboutParagraphs.map((paragraph, index) => (
+              <p key={index}>{paragraph}</p>
+            ))}
             
             <hr/>
             <section>

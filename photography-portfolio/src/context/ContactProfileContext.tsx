@@ -1,5 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { fetchPrimaryContactProfile, type ContactProfile } from '../api/users';
+import { setParseContentOwner } from '../api/client';
+import { useAuth } from './AuthContext';
 
 type ContactProfileState = {
   profile: ContactProfile | null;
@@ -14,6 +16,7 @@ export const ContactProfileProvider: React.FC<{ children: React.ReactNode }> = (
   const [profile, setProfile] = useState<ContactProfile | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   const loadProfile = useCallback(async () => {
     setLoading(true);
@@ -33,6 +36,14 @@ export const ContactProfileProvider: React.FC<{ children: React.ReactNode }> = (
   useEffect(() => {
     void loadProfile();
   }, [loadProfile]);
+
+  useEffect(() => {
+    if (user?.id) {
+      setParseContentOwner(user.id);
+      return;
+    }
+    setParseContentOwner(profile?.id ?? null);
+  }, [user?.id, profile?.id]);
 
   const value = useMemo<ContactProfileState>(
     () => ({ profile, loading, error, refresh: loadProfile }),

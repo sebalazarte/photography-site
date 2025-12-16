@@ -7,6 +7,7 @@ interface ParseUser {
   name?: string;
   phone?: string;
   whatsapp?: string;
+  acercaDe?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -18,6 +19,7 @@ export interface ContactProfile {
   email?: string;
   phone?: string;
   whatsapp?: string;
+  about?: string;
 }
 
 const mapToContactProfile = (user: ParseUser): ContactProfile => ({
@@ -27,6 +29,7 @@ const mapToContactProfile = (user: ParseUser): ContactProfile => ({
   email: user.email,
   phone: user.phone,
   whatsapp: user.whatsapp,
+  about: user.acercaDe,
 });
 
 export const fetchPrimaryContactProfile = async (): Promise<ContactProfile | null> => {

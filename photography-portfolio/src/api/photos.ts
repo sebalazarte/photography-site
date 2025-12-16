@@ -1,4 +1,4 @@
-import { absolutizeFromApi, parseRequest, runParseBatch, uploadParseFile } from './client';
+import { absolutizeFromApi, getParseContentOwner, parseRequest, runParseBatch, uploadParseFile } from './client';
 import type { StoredPhoto } from '../types/photos';
 
 const PHOTO_ORDER_PATH = '/classes/PhotoOrder';
@@ -21,7 +21,29 @@ interface ParsePhotoOrder {
     name: string;
     url: string;
   };
+  user?: {
+    objectId: string;
+  };
 }
+
+const resolveOwnerId = (ownerId?: string) => {
+  const resolved = ownerId ?? getParseContentOwner();
+  return resolved || null;
+};
+
+const requireOwnerId = (ownerId?: string) => {
+  const resolved = resolveOwnerId(ownerId);
+  if (!resolved) {
+    throw new Error('No hay un usuario activo para operar sobre fotos.');
+  }
+  return resolved;
+};
+
+const buildUserPointer = (ownerId: string) => ({
+  __type: 'Pointer' as const,
+  className: '_User',
+  objectId: ownerId,
+});
 
 const mapToStoredPhoto = (entry: ParsePhotoOrder, index: number): StoredPhoto => ({
   id: entry.objectId,
@@ -33,8 +55,13 @@ const mapToStoredPhoto = (entry: ParsePhotoOrder, index: number): StoredPhoto =>
   order: index,
 });
 
-const fetchPhotoOrders = async (folder: string) => {
-  const where = encodeURIComponent(JSON.stringify({ folderKey: folder }));
+const fetchPhotoOrders = async (folder: string, ownerId?: string) => {
+  const resolvedOwnerId = resolveOwnerId(ownerId);
+  if (!resolvedOwnerId) return [];
+  const where = encodeURIComponent(JSON.stringify({
+    folderKey: folder,
+    user: buildUserPointer(resolvedOwnerId),
+  }));
   const data = await parseRequest<ParseCollection<ParsePhotoOrder>>(`${PHOTO_ORDER_PATH}?where=${where}&order=position,createdAt&limit=1000`);
   const sorted = [...data.results].sort((a, b) => {
     const posA = Number.isFinite(a.position) ? (a.position as number) : Number.MAX_SAFE_INTEGER;
@@ -68,7 +95,8 @@ export const uploadToFolder = async (folder: string, files: FileList | File[]) =
     return fetchPhotoOrders(folder);
   }
 
-  const existing = await fetchPhotoOrders(folder);
+  const ownerId = requireOwnerId();
+  const existing = await fetchPhotoOrders(folder, ownerId);
   let nextPosition = existing.length;
 
   for (const file of iterable) {
@@ -83,6 +111,7 @@ export const uploadToFolder = async (folder: string, files: FileList | File[]) =
         __type: 'File' as const,
         name: uploaded.name,
       },
+      user: buildUserPointer(ownerId),
     };
     nextPosition += 1;
     await parseRequest(PHOTO_ORDER_PATH, {
@@ -92,17 +121,19 @@ export const uploadToFolder = async (folder: string, files: FileList | File[]) =
     });
   }
 
-  return fetchPhotoOrders(folder);
+  return fetchPhotoOrders(folder, ownerId);
 };
 
 export const deletePhotoFromFolder = async (folder: string, photoId: string) => {
+  const ownerId = requireOwnerId();
   await parseRequest(`${PHOTO_ORDER_PATH}/${photoId}`, {
     method: 'DELETE',
   });
-  return fetchPhotoOrders(folder);
+  return fetchPhotoOrders(folder, ownerId);
 };
 
 export const updatePhotoOrder = async (folder: string, order: string[]) => {
+  const ownerId = requireOwnerId();
   for (let index = 0; index < order.length; index += 1) {
     const objectId = order[index];
     await parseRequest(`/classes/PhotoOrder/${objectId}`, {
@@ -113,5 +144,5 @@ export const updatePhotoOrder = async (folder: string, order: string[]) => {
       body: JSON.stringify({ position: index }),
     });
   }
-  return fetchPhotoOrders(folder);
+  return fetchPhotoOrders(folder, ownerId);
 };

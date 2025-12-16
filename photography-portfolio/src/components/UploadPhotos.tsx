@@ -1,6 +1,8 @@
 import React, { useState, useCallback, useEffect, useId } from 'react';
 import type { StoredPhoto } from '../types/photos';
 import { deletePhotoFromFolder, listFolderPhotos, updatePhotoOrder, uploadToFolder } from '../api/photos';
+import { useAuth } from '../context/AuthContext';
+import { useContactProfile } from '../context/ContactProfileContext';
 
 interface UploadPhotosProps {
   folder: string;
@@ -17,6 +19,9 @@ const UploadPhotos: React.FC<UploadPhotosProps> = ({ folder, photos, onPhotosCha
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [savingOrder, setSavingOrder] = useState(false);
   const inputId = useId();
+  const { user } = useAuth();
+  const { profile } = useContactProfile();
+  const ownerId = user?.id ?? profile?.id ?? null;
 
   const effectivePhotos = photos ?? localPhotos;
 
@@ -29,8 +34,12 @@ const UploadPhotos: React.FC<UploadPhotosProps> = ({ folder, photos, onPhotosCha
 
   useEffect(() => {
     if (photos) return;
+    if (!ownerId) {
+      setLocalPhotos([]);
+      return;
+    }
     listFolderPhotos(folder).then(setLocalPhotos).catch(() => setLocalPhotos([]));
-  }, [folder, photos]);
+  }, [folder, photos, ownerId]);
 
   const handleFiles = useCallback(async (filesInput: FileList | File[]) => {
     try {

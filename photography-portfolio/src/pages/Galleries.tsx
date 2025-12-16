@@ -6,6 +6,7 @@ import { galleryFolderKey } from '../constants';
 import { fetchGalleries, type GalleryDTO } from '../api/galleries';
 import { useFolderPhotos } from '../hooks/useFolderPhotos';
 import { listFolderPhotos } from '../api/photos';
+import { useContactProfile } from '../context/ContactProfileContext';
 
 const Galleries: React.FC = () => {
   const [galleries, setGalleries] = useState<GalleryDTO[]>([]);
@@ -13,14 +14,19 @@ const Galleries: React.FC = () => {
   const [photoCounts, setPhotoCounts] = useState<Record<string, number>>({});
   const folderKey = selectedGalleryId ? galleryFolderKey(selectedGalleryId) : undefined;
   const { photos: selectedPhotos, loading: galleryLoading } = useFolderPhotos(folderKey);
+  const { profile } = useContactProfile();
 
   useEffect(() => {
+    if (!profile?.id) {
+      setGalleries([]);
+      setPhotoCounts({});
+      setSelectedGalleryId(null);
+      return;
+    }
     const load = async () => {
-      const data = await fetchGalleries();
+      const data = await fetchGalleries(profile.id);
       setGalleries(data);
-      if (data.length && !selectedGalleryId) {
-        setSelectedGalleryId(data[0].slug);
-      }
+      setSelectedGalleryId(prev => prev ?? data[0]?.slug ?? null);
       const entries = await Promise.all(
         data.map(async (g) => {
           const photos = await listFolderPhotos(galleryFolderKey(g.slug));
@@ -30,11 +36,22 @@ const Galleries: React.FC = () => {
       setPhotoCounts(Object.fromEntries(entries));
     };
     load().catch((err) => console.error('No se pudieron cargar las galerías', err));
-  }, []);
+  }, [profile?.id]);
 
   const selectedGallery = useMemo(() => (
     galleries.find(g => g.slug === selectedGalleryId) || null
   ), [galleries, selectedGalleryId]);
+
+  if (!profile?.id) {
+    return (
+      <div className="gallery-page">
+        <header className="mb-4">
+          <h2 className="h3 mb-1">Galerías</h2>
+        </header>
+        <p className="text-secondary">Cargando galerías...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="gallery-page">

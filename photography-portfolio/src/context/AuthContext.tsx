@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { fetchCurrentUser, parseLogout, type LoginResult } from '../api/auth';
-import { setParseSessionToken } from '../api/client';
+import { setParseContentOwner, setParseSessionToken } from '../api/client';
 
 export type User = {
   id: string;
@@ -9,6 +9,7 @@ export type User = {
   name?: string;
   phone?: string;
   whatsapp?: string;
+  about?: string;
 };
 
 type AuthSnapshot = {
@@ -43,6 +44,7 @@ const toSnapshot = (auth: LoginResult): AuthSnapshot => ({
     name: auth.user.name,
     phone: auth.user.phone,
     whatsapp: auth.user.whatsapp,
+    about: auth.user.about,
   },
   sessionToken: auth.sessionToken,
 });
@@ -56,6 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const token = snapshot?.sessionToken ?? null;
     setSessionToken(token);
     setParseSessionToken(token);
+    setParseContentOwner(snapshot?.user?.id ?? null);
     persistSnapshot(snapshot);
   };
 
@@ -84,6 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 name: current.name,
                 phone: current.phone,
                 whatsapp: current.whatsapp,
+                about: current.about,
               },
               sessionToken: snapshot.sessionToken,
             });
@@ -102,6 +106,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.warn('No se pudo restaurar la sesión guardada', error);
       persistSnapshot(null);
+      setParseContentOwner(null);
     }
   }, []);
 

@@ -1,5 +1,5 @@
 import { galleryFolderKey } from '../constants';
-import { parseRequest, runParseBatch } from './client';
+import { getParseContentOwner, parseRequest, runParseBatch } from './client';
 
 const GALLERIES_PATH = '/classes/Gallery';
 const PHOTO_ORDER_PATH = '/classes/PhotoOrder';
@@ -12,7 +12,29 @@ interface ParseGallery {
   objectId: string;
   name: string;
   slug: string;
+  user?: {
+    objectId: string;
+  };
 }
+
+const resolveOwnerId = (ownerId?: string) => {
+  const resolved = ownerId ?? getParseContentOwner();
+  return resolved || null;
+};
+
+const requireOwnerId = (ownerId?: string) => {
+  const resolved = resolveOwnerId(ownerId);
+  if (!resolved) {
+    throw new Error('No hay un usuario activo para operar sobre galerías.');
+  }
+  return resolved;
+};
+
+const buildUserPointer = (ownerId: string) => ({
+  __type: 'Pointer' as const,
+  className: '_User',
+  objectId: ownerId,
+});
 
 const slugify = (value: string) =>
   value
@@ -21,14 +43,22 @@ const slugify = (value: string) =>
     .toLowerCase()
     || `galeria-${Date.now()}`;
 
-const findGalleryBySlug = async (slug: string): Promise<ParseGallery | null> => {
-  const where = encodeURIComponent(JSON.stringify({ slug }));
+const findGalleryBySlug = async (slug: string, ownerId?: string): Promise<ParseGallery | null> => {
+  const resolvedOwnerId = resolveOwnerId(ownerId);
+  if (!resolvedOwnerId) return null;
+  const where = encodeURIComponent(JSON.stringify({
+    slug,
+    user: buildUserPointer(resolvedOwnerId),
+  }));
   const data = await parseRequest<ParseCollection<ParseGallery>>(`${GALLERIES_PATH}?where=${where}&limit=1`);
   return data.results[0] ?? null;
 };
 
-const deleteFolderPhotoOrders = async (folderKey: string) => {
-  const where = encodeURIComponent(JSON.stringify({ folderKey }));
+const deleteFolderPhotoOrders = async (folderKey: string, ownerId: string) => {
+  const where = encodeURIComponent(JSON.stringify({
+    folderKey,
+    user: buildUserPointer(ownerId),
+  }));
   const data = await parseRequest<ParseCollection<{ objectId: string }>>(`${PHOTO_ORDER_PATH}?where=${where}&limit=1000`);
   const ids = data.results.map(item => item.objectId);
   if (!ids.length) return;
@@ -38,9 +68,9 @@ const deleteFolderPhotoOrders = async (folderKey: string) => {
   })));
 };
 
-const ensureUniqueSlug = async (name: string) => {
+const ensureUniqueSlug = async (name: string, ownerId: string) => {
   const base = slugify(name);
-  const data = await fetchGalleries();
+  const data = await fetchGalleries(ownerId);
   const taken = new Set(data.map(gallery => gallery.slug));
   if (!taken.has(base)) {
     return base;
@@ -60,8 +90,11 @@ export interface GalleryDTO {
   slug: string;
 }
 
-export const fetchGalleries = async (): Promise<GalleryDTO[]> => {
-  const data = await parseRequest<ParseCollection<ParseGallery>>(`${GALLERIES_PATH}?order=slug`);
+export const fetchGalleries = async (ownerId?: string): Promise<GalleryDTO[]> => {
+  const resolvedOwnerId = resolveOwnerId(ownerId);
+  if (!resolvedOwnerId) return [];
+  const where = encodeURIComponent(JSON.stringify({ user: buildUserPointer(resolvedOwnerId) }));
+  const data = await parseRequest<ParseCollection<ParseGallery>>(`${GALLERIES_PATH}?where=${where}&order=slug`);
   return data.results.map(({ name, slug }) => ({ name, slug }));
 };
 
@@ -71,28 +104,34 @@ export const createGallery = async (name: string) => {
     throw new Error('nombre requerido');
   }
 
-  const slug = await ensureUniqueSlug(trimmed);
+  const ownerId = requireOwnerId();
+  const slug = await ensureUniqueSlug(trimmed, ownerId);
   await parseRequest(GALLERIES_PATH, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: trimmed, slug }),
+    body: JSON.stringify({
+      name: trimmed,
+      slug,
+      user: buildUserPointer(ownerId),
+    }),
   });
 
-  return fetchGalleries();
+  return fetchGalleries(ownerId);
 };
 
 export const deleteGallery = async (slug: string) => {
-  const gallery = await findGalleryBySlug(slug);
+  const ownerId = requireOwnerId();
+  const gallery = await findGalleryBySlug(slug, ownerId);
   if (!gallery) {
     throw new Error('Galería no encontrada');
   }
 
-  await deleteFolderPhotoOrders(galleryFolderKey(slug));
+  await deleteFolderPhotoOrders(galleryFolderKey(slug), ownerId);
   await parseRequest(`${GALLERIES_PATH}/${gallery.objectId}`, {
     method: 'DELETE',
   });
 
-  return fetchGalleries();
+  return fetchGalleries(ownerId);
 };
 
 export const updateGalleryName = async (slug: string, name: string) => {
@@ -101,7 +140,8 @@ export const updateGalleryName = async (slug: string, name: string) => {
     throw new Error('nombre requerido');
   }
 
-  const gallery = await findGalleryBySlug(slug);
+  const ownerId = requireOwnerId();
+  const gallery = await findGalleryBySlug(slug, ownerId);
   if (!gallery) {
     throw new Error('Galería no encontrada');
   }
@@ -112,5 +152,5 @@ export const updateGalleryName = async (slug: string, name: string) => {
     body: JSON.stringify({ name: trimmed }),
   });
 
-  return fetchGalleries();
+  return fetchGalleries(ownerId);
 };
