@@ -1,10 +1,17 @@
 import type React from 'react';
-import { CONTACT_EMAIL, CONTACT_NAME, CONTACT_PHONE, CONTACT_PHONE_WHATSAPP } from '../config/contact';
 import { useAuth } from '../context/AuthContext';
 import ContactPhotoManager from '../components/ContactPhotoManager';
+import { useContactProfile } from '../context/ContactProfileContext';
+import { formatWhatsappLink } from '../utils/contact';
 
 const Contact: React.FC = () => {
   const { user } = useAuth();
+  const { profile, loading, error } = useContactProfile();
+  const contactName = profile?.name ?? profile?.username ?? 'Contacto';
+  const email = profile?.email;
+  const phoneLabel = profile?.phone ?? profile?.whatsapp;
+  const whatsappLink = formatWhatsappLink(profile?.whatsapp);
+  const hasContactMethods = Boolean(email || (whatsappLink && phoneLabel));
 
   return (
     <div className="font-monospace">
@@ -12,7 +19,7 @@ const Contact: React.FC = () => {
         <h2 className="h3 mb-3">Contacto</h2>
         <div className="row g-4 align-items-start">
           <div className="col-12 col-md-4">
-            <ContactPhotoManager contactName={CONTACT_NAME} isEditable={Boolean(user)} />
+            <ContactPhotoManager contactName={contactName} isEditable={Boolean(user)} />
           </div>
 
           <div className="col-12 col-md-8">
@@ -25,18 +32,27 @@ const Contact: React.FC = () => {
             <hr/>
             <section>
               <p className="text-secondary mb-4">Podés escribirme o enviar un mensaje directo.</p>
+              {loading && <span className="text-secondary small">Cargando datos de contacto...</span>}
+              {error && <span className="text-danger small">{error}</span>}
+              {!loading && !error && !hasContactMethods && (
+                <span className="text-secondary small">Los datos de contacto aún no están disponibles.</span>
+              )}
               <div className="d-flex flex-column flex-md-row gap-3">
-                <a className="btn btn-outline-dark" href={`mailto:${CONTACT_EMAIL}`}>
-                  Email: {CONTACT_EMAIL}
-                </a>
-                <a
-                  className="btn btn-dark"
-                  href={CONTACT_PHONE_WHATSAPP}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  WhatsApp: {CONTACT_PHONE}
-                </a>
+                {email && (
+                  <a className="btn btn-outline-dark" href={`mailto:${email}`}>
+                    Email: {email}
+                  </a>
+                )}
+                {whatsappLink && phoneLabel && (
+                  <a
+                    className="btn btn-dark"
+                    href={whatsappLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    WhatsApp: {phoneLabel}
+                  </a>
+                )}
               </div>
             </section>
           </div>

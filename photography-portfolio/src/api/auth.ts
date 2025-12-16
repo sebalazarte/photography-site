@@ -1,62 +1,103 @@
-import { parseRequest, setParseSessionToken } from './client';
+import {
+  PARSE_APP_ID,
+  PARSE_BASE_URL,
+  PARSE_REST_KEY,
+  parseRequest,
+  setParseSessionToken,
+  getParseSessionToken,
+} from './client';
 
-interface ParseUser {
+type ParseUser = {
   objectId: string;
   username: string;
   email?: string;
-  sessionToken: string;
-}
+  name?: string;
+  phone?: string;
+  whatsapp?: string;
+  sessionToken?: string;
+};
 
-interface ParseLoginResponse extends ParseUser {
-  createdAt: string;
-  updatedAt: string;
-}
+export type AuthenticatedUser = {
+  id: string;
+  username: string;
+  email?: string;
+  name?: string;
+  phone?: string;
+  whatsapp?: string;
+};
 
-export interface LoginResult {
-  user: {
-    id: string;
-    username: string;
-    email?: string;
-  };
+export type LoginResult = {
+  user: AuthenticatedUser;
   sessionToken: string;
-}
+};
+
+const mapParseUser = (user: ParseUser): AuthenticatedUser => ({
+  id: user.objectId,
+  username: user.username,
+  email: user.email,
+  name: user.name,
+  phone: user.phone,
+  whatsapp: user.whatsapp,
+});
 
 export const parseLogin = async (username: string, password: string): Promise<LoginResult> => {
-  const params = new URLSearchParams({ username, password });
-  const data = await parseRequest<ParseLoginResponse>(`/login?${params.toString()}`);
-  const result: LoginResult = {
-    user: {
-      id: data.objectId,
-      username: data.username,
-      email: data.email,
+  const baseUrl = PARSE_BASE_URL || 'https://parseapi.back4app.com';
+  const url = new URL(`${baseUrl}/login`);
+  url.search = new URLSearchParams({ username, password }).toString();
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'X-Parse-Application-Id': PARSE_APP_ID || import.meta.env.VITE_PARSE_APP_ID,
+      'X-Parse-REST-API-Key': PARSE_REST_KEY || import.meta.env.VITE_PARSE_REST_KEY,
     },
-    sessionToken: data.sessionToken,
-  };
-  setParseSessionToken(data.sessionToken);
-  return result;
-};
+  });
 
-export const parseLogout = async () => {
-  try {
-    await parseRequest('/logout', {
-      method: 'POST',
-    });
-  } finally {
-    setParseSessionToken(null);
+  if (!response.ok) {
+    let message = 'Login failed';
+    try {
+      const errorPayload = await response.json();
+      message = errorPayload?.error || message;
+    } catch {
+      // ignore body parse errors and use default message
+    }
+    throw new Error(message);
   }
+
+  const result = (await response.json()) as ParseUser;
+  if (!result.sessionToken) {
+    throw new Error('Login failed');
+  }
+  setParseSessionToken(result.sessionToken);
+  const user = mapParseUser(result);
+
+  return { user, sessionToken: result.sessionToken };
 };
 
-export const fetchCurrentUser = async (): Promise<LoginResult['user'] | null> => {
+export const parseLogout = async (): Promise<void> => {
+  const sessionToken = getParseSessionToken();
+  if (!sessionToken) {
+    return;
+  }
+
+  const baseUrl = PARSE_BASE_URL || 'https://parseapi.back4app.com';
+  await fetch(`${baseUrl}/logout`, {
+    method: 'POST',
+    headers: {
+      'X-Parse-Application-Id': PARSE_APP_ID || import.meta.env.VITE_PARSE_APP_ID,
+      'X-Parse-REST-API-Key': PARSE_REST_KEY || import.meta.env.VITE_PARSE_REST_KEY,
+      'X-Parse-Session-Token': sessionToken,
+    },
+  });
+
+  setParseSessionToken(null);
+};
+
+export const fetchCurrentUser = async (): Promise<AuthenticatedUser | null> => {
   try {
-    const data = await parseRequest<ParseUser>('/users/me');
-    if (!data) return null;
-    return {
-      id: data.objectId,
-      username: data.username,
-      email: data.email,
-    };
-  } catch (error) {
-    console.warn('No se pudo verificar la sesión Parse', error);
+    const result = await parseRequest<ParseUser>('/users/me');
+    return mapParseUser(result);
+  } catch {
     return null;
   }
 };

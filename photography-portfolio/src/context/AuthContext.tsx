@@ -6,6 +6,9 @@ export type User = {
   id: string;
   username: string;
   email?: string;
+  name?: string;
+  phone?: string;
+  whatsapp?: string;
 };
 
 type AuthSnapshot = {
@@ -37,6 +40,9 @@ const toSnapshot = (auth: LoginResult): AuthSnapshot => ({
     id: auth.user.id,
     username: auth.user.username,
     email: auth.user.email,
+    name: auth.user.name,
+    phone: auth.user.phone,
+    whatsapp: auth.user.whatsapp,
   },
   sessionToken: auth.sessionToken,
 });
@@ -59,23 +65,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const snapshot = JSON.parse(raw) as AuthSnapshot;
       if (snapshot?.user && snapshot?.sessionToken) {
-        setUser(snapshot.user);
-        setSessionToken(snapshot.sessionToken);
-        setParseSessionToken(snapshot.sessionToken);
-
+        applyAuth(snapshot);
         let cancelled = false;
         void (async () => {
           try {
             const current = await fetchCurrentUser();
             if (cancelled) return;
             if (!current) {
+              console.warn('Sesión inválida, no se pudo recuperar el usuario actual');
               applyAuth(null);
               return;
             }
-            setUser({
-              id: current.id,
-              username: current.username,
-              email: current.email,
+            applyAuth({
+              user: {
+                id: current.id,
+                username: current.username,
+                email: current.email,
+                name: current.name,
+                phone: current.phone,
+                whatsapp: current.whatsapp,
+              },
+              sessionToken: snapshot.sessionToken,
             });
           } catch (error) {
             if (!cancelled) {

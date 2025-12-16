@@ -9,25 +9,28 @@ import AdminHome from './pages/AdminHome';
 import AdminGalleries from './pages/AdminGalleries';
 import AppHeader from './components/AppHeader';
 import AppFooter from './components/AppFooter';
+import { ContactProfileProvider } from './context/ContactProfileContext';
 
 function App() {
   return (
-    <div className="App">
-      <AppHeader />
-      <main>
-        <div className="container py-3">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/galleries" element={<Galleries />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/admin/home" element={<AdminHome />} />
-            <Route path="/admin/galleries" element={<AdminGalleries />} />
-          </Routes>
-        </div>
-      </main>
-      <AppFooter />
-    </div>
+    <ContactProfileProvider>
+      <div className="App">
+        <AppHeader />
+        <main>
+          <div className="container py-3">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/galleries" element={<Galleries />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/admin/home" element={<AdminHome />} />
+              <Route path="/admin/galleries" element={<AdminGalleries />} />
+            </Routes>
+          </div>
+        </main>
+        <AppFooter />
+      </div>
+    </ContactProfileProvider>
   );
 }
 

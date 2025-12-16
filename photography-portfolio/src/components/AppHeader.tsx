@@ -1,17 +1,19 @@
 import { NavLink } from 'react-router-dom';
 import type React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { CONTACT_NAME } from '../config/contact';
+import { useContactProfile } from '../context/ContactProfileContext';
 
 const AppHeader: React.FC = () => {
   const { user, logout } = useAuth();
+  const { profile } = useContactProfile();
+  const contactName = profile?.name ?? profile?.username ?? 'Portfolio';
 
   return (
     <header className="App-header mb-4">
       <nav className="navbar navbar-expand-md bg-body-tertiary">
         <div className="container">
           <NavLink to="/" className="navbar-brand">
-            <div className="nav nav-name text-uppercase">{CONTACT_NAME}</div>
+            <div className="nav nav-name text-uppercase">{contactName}</div>
           </NavLink>
           <button
             className="navbar-toggler"
