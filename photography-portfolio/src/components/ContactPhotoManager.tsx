@@ -40,7 +40,7 @@ const ContactPhotoManager: React.FC<ContactPhotoManagerProps> = ({ contactName, 
     if (!mainPhoto) return;
     try {
       setStatus('saving');
-      const updated = await deletePhotoFromFolder(CONTACT_FOLDER, mainPhoto.filename);
+      const updated = await deletePhotoFromFolder(CONTACT_FOLDER, mainPhoto.id);
       setPhotos(updated);
       setStatus('idle');
     } catch (err) {

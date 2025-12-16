@@ -96,9 +96,9 @@ const UploadPhotos: React.FC<UploadPhotosProps> = ({ folder, photos, onPhotosCha
     }
   };
 
-  const removePhoto = async (filename: string) => {
+  const removePhoto = async (photoId: string) => {
     try {
-      const updated = await deletePhotoFromFolder(folder, filename);
+      const updated = await deletePhotoFromFolder(folder, photoId);
       sync(updated);
     } catch (error) {
       alert(error instanceof Error ? error.message : 'No se pudo eliminar la foto');
@@ -249,7 +249,7 @@ const UploadPhotos: React.FC<UploadPhotosProps> = ({ folder, photos, onPhotosCha
                     <span className="photo-name" title={photo.originalName}>{photo.originalName}</span>
                     <button
                       className="btn btn-sm btn-outline-danger"
-                      onClick={() => removePhoto(photo.filename)}
+                      onClick={() => removePhoto(photo.id)}
                     >
                       Eliminar
                     </button>

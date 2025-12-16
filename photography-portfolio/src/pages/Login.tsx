@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { sha256 } from '../utils/hash';
-import { ADMIN_PASSWORD_HASH, ADMIN_PROFILE, ADMIN_USERNAME } from '../config/auth';
+import { parseLogin } from '../api/auth';
 
 const Login = () => {
   const { login } = useAuth();
@@ -25,17 +24,16 @@ const Login = () => {
     }
     setVerifying(true);
     try {
-      const hashed = await sha256(form.password);
-      const isValid = form.username.trim().toLowerCase() === ADMIN_USERNAME && hashed === ADMIN_PASSWORD_HASH;
-      if (!isValid) {
-        setError('Credenciales inválidas.');
-        return;
-      }
-      login({ name: ADMIN_PROFILE.name, email: ADMIN_PROFILE.email });
+      const auth = await parseLogin(form.username, form.password);
+      login(auth);
       navigate('/');
     } catch (err) {
       console.error(err);
-      setError('No se pudo verificar las credenciales.');
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('No se pudo iniciar sesión.');
+      }
     } finally {
       setVerifying(false);
     }

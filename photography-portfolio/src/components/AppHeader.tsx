@@ -59,7 +59,7 @@ const AppHeader: React.FC = () => {
                     data-bs-toggle="dropdown"
                     aria-expanded="false"
                   >
-                    {user.name}
+                    {user.username}
                   </button>
                   <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
                     <li>
@@ -76,7 +76,7 @@ const AppHeader: React.FC = () => {
                       <hr className="dropdown-divider" />
                     </li>
                     <li>
-                      <button className="dropdown-item text-danger" onClick={logout}>
+                      <button className="dropdown-item text-danger" onClick={() => { void logout(); }}>
                         Salir
                       </button>
                     </li>
