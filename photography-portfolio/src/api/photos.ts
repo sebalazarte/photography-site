@@ -103,11 +103,15 @@ export const deletePhotoFromFolder = async (folder: string, photoId: string) => 
 };
 
 export const updatePhotoOrder = async (folder: string, order: string[]) => {
-  const requests = order.map((objectId, index) => ({
-    method: 'PUT' as const,
-    path: `/parse/classes/PhotoOrder/${objectId}`,
-    body: { position: index },
-  }));
-  await runParseBatch(requests);
+  for (let index = 0; index < order.length; index += 1) {
+    const objectId = order[index];
+    await parseRequest(`/classes/PhotoOrder/${objectId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ position: index }),
+    });
+  }
   return fetchPhotoOrders(folder);
 };

@@ -2,6 +2,8 @@
 
 A minimalist and visually appealing React/TypeScript application for uploading and showcasing photography work.
 
+> Note: The standalone Express API now lives in the sibling project `../photografy-backend`.
+
 ## Features
 
 - Drag and drop photo upload functionality
@@ -42,14 +44,17 @@ A minimalist and visually appealing React/TypeScript application for uploading a
 
 ```
 photography-portfolio/
+├── public/
 ├── src/
+│   ├── api/
 │   ├── components/
-│   │   ├── UploadPhotos.tsx
-│   │   └── UploadPhotos.css
-│   ├── App.tsx
-│   ├── App.css
-│   ├── main.tsx
-│   └── index.css
+│   ├── config/
+│   ├── context/
+│   ├── hooks/
+│   ├── pages/
+│   ├── photos/
+│   ├── types/
+│   └── utils/
 ├── index.html
 ├── package.json
 ├── vite.config.ts

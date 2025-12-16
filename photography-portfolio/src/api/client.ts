@@ -1,6 +1,6 @@
-const PARSE_BASE_URL = import.meta.env.VITE_PARSE_SERVER_URL ?? 'https://parseapi.back4app.com';
-const PARSE_APP_ID = import.meta.env.VITE_PARSE_APP_ID ?? 'WMyRpr7dIqcjtxgc6IufMYq4UDuyAk9lmNaBkJcX';
-const PARSE_REST_KEY = import.meta.env.VITE_PARSE_REST_KEY ?? 'icQrdQd7nLlRVc34HONyO3OKoZHZGFHB2wVKRypg';
+const PARSE_BASE_URL = import.meta.env.VITE_PARSE_SERVER_URL ?? '';
+const PARSE_APP_ID = import.meta.env.VITE_PARSE_APP_ID ?? '';
+const PARSE_REST_KEY = import.meta.env.VITE_PARSE_REST_KEY ?? '';
 const PARSE_JS_KEY = import.meta.env.VITE_PARSE_JS_KEY ?? '';
 let parseSessionToken = import.meta.env.VITE_PARSE_SESSION_TOKEN ?? '';
 

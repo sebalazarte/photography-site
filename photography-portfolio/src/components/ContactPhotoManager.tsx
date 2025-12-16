@@ -22,10 +22,14 @@ const ContactPhotoManager: React.FC<ContactPhotoManagerProps> = ({ contactName, 
   };
 
   const handlePhotoSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!event.target.files || event.target.files.length === 0) return;
+    const selected = event.target.files?.[0];
+    if (!selected) return;
     try {
       setStatus('saving');
-      const updated = await uploadToFolder(CONTACT_FOLDER, event.target.files);
+      if (mainPhoto) {
+        await deletePhotoFromFolder(CONTACT_FOLDER, mainPhoto.id);
+      }
+      const updated = await uploadToFolder(CONTACT_FOLDER, [selected]);
       setPhotos(updated);
       setStatus('idle');
     } catch (err) {
