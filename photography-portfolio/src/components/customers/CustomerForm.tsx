@@ -16,7 +16,7 @@ interface CustomerFormProps {
   mode: 'create' | 'edit';
   customer: CustomerRecord | null;
   onSubmit: (values: CustomerFormValues) => Promise<CustomerRecord>;
-  onCancelEdit?: () => void;
+  onCancel?: () => void;
 }
 
 const emptyForm: CustomerFormValues = {
@@ -29,7 +29,7 @@ const emptyForm: CustomerFormValues = {
   about: '',
 };
 
-const CustomerForm: React.FC<CustomerFormProps> = ({ mode, customer, onSubmit, onCancelEdit }) => {
+const CustomerForm: React.FC<CustomerFormProps> = ({ mode, customer, onSubmit, onCancel }) => {
   const [form, setForm] = useState<CustomerFormValues>(emptyForm);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -119,67 +119,74 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode, customer, onSubmit, o
     <div className="card shadow-sm h-100">
       <div className="card-header d-flex justify-content-between align-items-center">
         <h2 className="h6 mb-0">{isEdit ? 'Editar cliente' : 'Nuevo cliente'}</h2>
-        {isEdit && onCancelEdit && (
-          <button type="button" className="btn btn-sm btn-outline-secondary" onClick={onCancelEdit} disabled={submitting}>
-            Cancelar edición
+        {onCancel && (
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-secondary"
+            onClick={onCancel}
+            disabled={submitting}
+          >
+            {isEdit ? 'Cancelar edición' : 'Cancelar'}
           </button>
         )}
       </div>
       <div className="card-body">
         <form className="vstack gap-3" onSubmit={handleSubmit}>
-          <div>
-            <label htmlFor="username" className="form-label">Usuario *</label>
-            <input
-              id="username"
-              name="username"
-              className="form-control"
-              value={form.username}
-              onChange={handleChange}
-              autoComplete="off"
-              disabled={submitting || isEdit}
-            />
+          <div className="row g-3">
+            <div className="col-12 col-md-6">
+              <label htmlFor="username" className="form-label">Usuario *</label>
+              <input
+                id="username"
+                name="username"
+                className="form-control"
+                value={form.username}
+                onChange={handleChange}
+                autoComplete="off"
+                disabled={submitting || isEdit}
+              />
+            </div>
+            <div className="col-12 col-md-6">
+              <label htmlFor="password" className="form-label">{isEdit ? 'Nueva contraseña' : 'Contraseña *'}</label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                className="form-control"
+                value={form.password}
+                onChange={handleChange}
+                autoComplete="new-password"
+                placeholder={isEdit ? 'Ingresa una nueva contraseña para actualizarla (opcional)' : undefined}
+                disabled={submitting}
+              />
+            </div>
           </div>
 
-          <div>
-            <label htmlFor="password" className="form-label">{isEdit ? 'Nueva contraseña' : 'Contraseña *'}</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              className="form-control"
-              value={form.password}
-              onChange={handleChange}
-              autoComplete="new-password"
-              placeholder={isEdit ? 'Ingresa una nueva contraseña para actualizarla (opcional)' : undefined}
-              disabled={submitting}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="email" className="form-label">Email</label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              className="form-control"
-              value={form.email}
-              onChange={handleChange}
-              autoComplete="email"
-              disabled={submitting}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="name" className="form-label">Nombre</label>
-            <input
-              id="name"
-              name="name"
-              className="form-control"
-              value={form.name}
-              onChange={handleChange}
-              autoComplete="name"
-              disabled={submitting}
-            />
+          <div className="row g-3">
+            <div className="col-12 col-md-6">
+              <label htmlFor="name" className="form-label">Nombre</label>
+              <input
+                id="name"
+                name="name"
+                className="form-control"
+                value={form.name}
+                onChange={handleChange}
+                autoComplete="name"
+                disabled={submitting}
+              />
+            </div>
+            <div className="col-12 col-md-6">
+              <label htmlFor="email" className="form-label">Email</label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                className="form-control"
+                value={form.email}
+                onChange={handleChange}
+                autoComplete="email"
+                disabled={submitting}
+              />
+            </div>
           </div>
 
           <div className="row g-3">

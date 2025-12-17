@@ -17,6 +17,7 @@ const AdminCustomers = () => {
   const [customers, setCustomers] = useState<CustomerRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [formMode, setFormMode] = useState<'create' | 'edit' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const loadCustomers = useCallback(async () => {
@@ -25,8 +26,11 @@ const AdminCustomers = () => {
     try {
       const data = await fetchCustomers();
       setCustomers(data);
-      if (data.every(customer => customer.id !== selectedId)) {
+      if (selectedId && data.every(customer => customer.id !== selectedId)) {
         setSelectedId(null);
+        if (formMode === 'edit') {
+          setFormMode(null);
+        }
       }
     } catch (err) {
       console.error('No se pudieron cargar los clientes', err);
@@ -34,7 +38,7 @@ const AdminCustomers = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedId]);
+  }, [selectedId, formMode]);
 
   useEffect(() => {
     void loadCustomers();
@@ -76,10 +80,12 @@ const AdminCustomers = () => {
 
   const handleNew = () => {
     setSelectedId(null);
+    setFormMode('create');
   };
 
   const handleSelect = (customerId: string | null) => {
     setSelectedId(customerId);
+    setFormMode(customerId ? 'edit' : null);
   };
 
   if (!user) {
@@ -97,28 +103,31 @@ const AdminCustomers = () => {
         <p className="text-secondary mb-0">Administrá los usuarios con rol de cliente.</p>
       </header>
 
-      <div className="row g-4 align-items-start">
-        <section className="col-12 col-lg-7">
-          <CustomerGrid
-            customers={customers}
-            loading={loading}
-            selectedId={selectedId}
-            error={error}
-            onSelect={handleSelect}
-            onRefresh={() => {
-              void loadCustomers();
-            }}
-            onCreateNew={handleNew}
-          />
-        </section>
-        <section className="col-12 col-lg-5">
-          <CustomerForm
-            mode={selectedCustomer ? 'edit' : 'create'}
-            customer={selectedCustomer}
-            onSubmit={handleSubmit}
-            onCancelEdit={() => setSelectedId(null)}
-          />
-        </section>
+      <div className="vstack gap-4">
+        <CustomerGrid
+          customers={customers}
+          loading={loading}
+          selectedId={selectedId}
+          error={error}
+          onSelect={handleSelect}
+          onRefresh={() => {
+            void loadCustomers();
+          }}
+          onCreateNew={handleNew}
+        />
+        {formMode && (
+          <section>
+            <CustomerForm
+              mode={formMode}
+              customer={selectedCustomer}
+              onSubmit={handleSubmit}
+              onCancel={() => {
+                setFormMode(null);
+                setSelectedId(null);
+              }}
+            />
+          </section>
+        )}
       </div>
     </div>
   );
