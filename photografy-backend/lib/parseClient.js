@@ -142,6 +142,27 @@ const addUserToRole = async (userId, roleId) => {
 
 const fetchUserById = async (userId) => parseRequest(`/users/${userId}`);
 
+const removeUserFromRole = async (userId, roleId) => {
+  await parseRequest(`/roles/${roleId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      users: {
+        __op: 'RemoveRelation',
+        objects: [
+          {
+            __type: 'Pointer',
+            className: '_User',
+            objectId: userId,
+          },
+        ],
+      },
+    }),
+  });
+};
+
 export {
   PORT,
   parseRequest,
@@ -150,5 +171,6 @@ export {
   encodeWhere,
   fetchRoleByName,
   addUserToRole,
+  removeUserFromRole,
   fetchUserById,
 };

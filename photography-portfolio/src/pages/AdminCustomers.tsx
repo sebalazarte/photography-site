@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   createCustomerAccount,
+  deleteCustomerAccount,
   fetchCustomers,
   updateCustomerAccount,
   type CustomerRecord,
@@ -19,6 +20,7 @@ const AdminCustomers = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [formMode, setFormMode] = useState<'create' | 'edit' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const loadCustomers = useCallback(async () => {
     setLoading(true);
@@ -88,6 +90,25 @@ const AdminCustomers = () => {
     setFormMode(customerId ? 'edit' : null);
   };
 
+  const handleDelete = async (customerId: string) => {
+    setError(null);
+    try {
+      setDeletingId(customerId);
+      await deleteCustomerAccount(customerId);
+      if (selectedId === customerId) {
+        setSelectedId(null);
+        setFormMode(null);
+      }
+      await loadCustomers();
+    } catch (err) {
+      console.error('No se pudo eliminar el cliente', err);
+      const message = err instanceof Error ? err.message : 'No se pudo eliminar el cliente.';
+      setError(message);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   if (!user) {
     return <Navigate to="/login" replace />;
   }
@@ -114,6 +135,8 @@ const AdminCustomers = () => {
             void loadCustomers();
           }}
           onCreateNew={handleNew}
+          onDelete={handleDelete}
+          deletingId={deletingId}
         />
         {formMode && (
           <section>

@@ -3,6 +3,7 @@ import {
   encodeWhere,
   fetchRoleByName,
   addUserToRole,
+  removeUserFromRole,
   fetchUserById,
 } from '../lib/parseClient.js';
 
@@ -124,9 +125,25 @@ const updateCustomer = async (id, {
   return mapToCustomerRecord(user);
 };
 
+const deleteCustomer = async (id, roleName = 'customer') => {
+  try {
+    const role = await fetchRoleByName(roleName);
+    if (role) {
+      await removeUserFromRole(id, role.objectId);
+    }
+  } catch (error) {
+    console.warn(`No se pudo quitar el usuario ${id} del rol ${roleName}`, error);
+  }
+
+  await parseRequest(`/users/${id}`, {
+    method: 'DELETE',
+  });
+};
+
 export {
   mapToCustomerRecord,
   listCustomers,
   createCustomer,
   updateCustomer,
+  deleteCustomer,
 };

@@ -1,6 +1,41 @@
 import type React from 'react';
 import type { CustomerRecord } from '../../api/users';
 
+const iconProps = {
+  width: 16,
+  height: 16,
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 1.5,
+  strokeLinecap: 'round' as const,
+  strokeLinejoin: 'round' as const,
+};
+
+const EditIcon = () => (
+  <svg {...iconProps} aria-hidden="true">
+    <path d="M4 17v3h3l11-11-3-3L4 17z" />
+    <path d="M13 6l3 3" />
+  </svg>
+);
+
+const TrashIcon = () => (
+  <svg {...iconProps} aria-hidden="true">
+    <path d="M5 7h14" />
+    <path d="M10 11v6" />
+    <path d="M14 11v6" />
+    <path d="M7 7l1 12h8l1-12" />
+    <path d="M9 7V5h6v2" />
+  </svg>
+);
+
+const PendingIcon = () => (
+  <svg {...iconProps} aria-hidden="true">
+    <circle cx="12" cy="12" r="8" />
+    <path d="M12 8v4l2.5 2.5" />
+  </svg>
+);
+
 interface CustomerGridProps {
   customers: CustomerRecord[];
   loading: boolean;
@@ -9,6 +44,8 @@ interface CustomerGridProps {
   onSelect: (customerId: string | null) => void;
   onRefresh: () => void;
   onCreateNew: () => void;
+  onDelete: (customerId: string) => void;
+  deletingId: string | null;
 }
 
 const CustomerGrid: React.FC<CustomerGridProps> = ({
@@ -19,6 +56,8 @@ const CustomerGrid: React.FC<CustomerGridProps> = ({
   onSelect,
   onRefresh,
   onCreateNew,
+  onDelete,
+  deletingId,
 }) => {
   const hasCustomers = customers.length > 0;
 
@@ -66,6 +105,8 @@ const CustomerGrid: React.FC<CustomerGridProps> = ({
               <tbody>
                 {customers.map(customer => {
                   const isSelected = selectedId === customer.id;
+                  const isDeleting = deletingId === customer.id;
+                  const customerLabel = customer.name || customer.username;
                   return (
                     <tr key={customer.id} className={isSelected ? 'table-active' : undefined}>
                       <td>{customer.username}</td>
@@ -73,13 +114,32 @@ const CustomerGrid: React.FC<CustomerGridProps> = ({
                       <td>{customer.email ?? '—'}</td>
                       <td>{customer.phone ?? '—'}</td>
                       <td className="text-end">
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-outline-primary"
-                          onClick={() => onSelect(customer.id)}
-                        >
-                          Editar
-                        </button>
+                        <div className="d-inline-flex align-items-center gap-2">
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-secondary icon-button"
+                            onClick={() => onSelect(customer.id)}
+                            aria-label={`Editar ${customerLabel}`}
+                            disabled={loading || Boolean(deletingId)}
+                          >
+                            <EditIcon />
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-danger icon-button"
+                            onClick={() => {
+                              if (isDeleting) return;
+                              const confirmed = window.confirm(`¿Eliminar al cliente "${customerLabel}"? Esta acción no se puede deshacer.`);
+                              if (confirmed) {
+                                onDelete(customer.id);
+                              }
+                            }}
+                            aria-label={`Eliminar ${customerLabel}`}
+                            disabled={isDeleting || loading}
+                          >
+                            {isDeleting ? <PendingIcon /> : <TrashIcon />}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

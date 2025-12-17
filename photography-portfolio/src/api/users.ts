@@ -130,6 +130,31 @@ const addUserToRole = async (userId: string, roleId: string) => {
   }
 };
 
+const removeUserFromRole = async (userId: string, roleId: string) => {
+  try {
+    await parseRequest(`/roles/${roleId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        users: {
+          __op: 'RemoveRelation',
+          objects: [
+            {
+              __type: 'Pointer',
+              className: '_User',
+              objectId: userId,
+            },
+          ],
+        },
+      }),
+    });
+  } catch (error) {
+    console.warn(`No se pudo quitar el usuario ${userId} del rol ${roleId}`, error);
+  }
+};
+
 const fetchUserById = async (userId: string): Promise<ContactProfile> => {
   const user = await parseRequest<ParseUser>(`/users/${userId}`);
   return mapToContactProfile(user);
@@ -309,4 +334,34 @@ export const updateCustomerAccount = async (userId: string, input: UpdateCustome
   }
 
   return fetchUserById(userId);
+};
+
+export const deleteCustomerAccount = async (userId: string, roleName = 'customer'): Promise<void> => {
+  if (HAS_BACKEND) {
+    try {
+      const query = roleName ? `?role=${encodeURIComponent(roleName)}` : '';
+      await backendRequest<void>(`/api/customers/${userId}${query}`, {
+        method: 'DELETE',
+      });
+      return;
+    } catch (error) {
+      if (!isNetworkError(error)) {
+        throw error instanceof Error ? error : new Error('No se pudo eliminar el cliente.');
+      }
+      console.warn('No se pudo usar el backend para eliminar el cliente, intentando directamente en Parse.', error);
+    }
+  }
+
+  try {
+    const role = await fetchRoleByName(roleName);
+    if (role) {
+      await removeUserFromRole(userId, role.objectId);
+    }
+  } catch (error) {
+    console.warn(`No se pudo quitar el usuario ${userId} del rol ${roleName} en Parse`, error);
+  }
+
+  await parseRequest(`/users/${userId}`, {
+    method: 'DELETE',
+  });
 };
