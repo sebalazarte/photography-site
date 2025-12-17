@@ -15,6 +15,11 @@ interface ImageGalleryProps {
 const ImageGallery: React.FC<ImageGalleryProps> = ({ folder, photos }) => {
   const shouldFetch = !photos;
   const { photos: fetched, loading } = useFolderPhotos(shouldFetch ? folder : undefined);
+  const {
+    photos: homePhotos,
+    refresh: refreshHomePhotos,
+    setPhotos: setHomePhotos,
+  } = useFolderPhotos(folder !== HOME_FOLDER ? HOME_FOLDER : undefined);
   const items = photos ?? fetched;
   const { user } = useAuth();
   const canReorder = Boolean(user);
@@ -162,6 +167,14 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ folder, photos }) => {
         setNotice({ type: 'error', message: 'Esta foto ya está destacada en el inicio.' });
       } else {
         setNotice({ type: 'success', message: 'Foto enviada al inicio.' });
+        setHomePhotos(prev => {
+          const exists = prev.some(item => item.id === photo.id || item.filename === photo.filename);
+          if (exists) {
+            return prev;
+          }
+          return [...prev, photo];
+        });
+        await refreshHomePhotos();
       }
     } catch (error) {
       console.error('No se pudo enviar la foto al inicio', error);
@@ -172,7 +185,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ folder, photos }) => {
     } finally {
       setFeaturingId(null);
     }
-  }, [canReorder, featuringId]);
+  }, [canReorder, featuringId, refreshHomePhotos, setHomePhotos]);
 
   if (!galleryItems.length) {
     return <p className="text-secondary">{loading ? 'Cargando fotos...' : 'No hay fotos para mostrar aún.'}</p>;
@@ -202,13 +215,14 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ folder, photos }) => {
           } : {};
 
           const isHomeFolder = folder === HOME_FOLDER;
+          const alreadyFeatured = isHomeFolder || homePhotos.some(item => item.id === photo.id || item.filename === photo.filename);
           return (
             <figure
               key={photo.id}
               className={figureClass}
               {...dragProps}
             >
-              {canReorder && !isHomeFolder && (
+              {canReorder && !alreadyFeatured && (
                 <div className="masonry-item__actions">
                   <button
                     type="button"
