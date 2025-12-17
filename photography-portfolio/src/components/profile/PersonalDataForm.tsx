@@ -1,0 +1,169 @@
+import { useEffect, useMemo, useState } from 'react';
+import type React from 'react';
+import { useAuth } from '../../context/AuthContext';
+import { useContactProfile } from '../../context/ContactProfileContext';
+import { updateCustomerAccount } from '../../api/users';
+
+type PersonalDataFormState = {
+  name: string;
+  email: string;
+  phone: string;
+  about: string;
+};
+
+const emptyForm: PersonalDataFormState = {
+  name: '',
+  email: '',
+  phone: '',
+  about: '',
+};
+
+const PersonalDataForm: React.FC = () => {
+  const { user, refresh } = useAuth();
+  const { refresh: refreshContact } = useContactProfile();
+  const [form, setForm] = useState<PersonalDataFormState>(emptyForm);
+  const [status, setStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) {
+      setForm(emptyForm);
+      return;
+    }
+    setForm({
+      name: user.name ?? '',
+      email: user.email ?? '',
+      phone: user.phone ?? '',
+      about: user.about ?? '',
+    });
+  }, [user?.id, user?.name, user?.email, user?.phone, user?.about]);
+
+  const phoneDigits = useMemo(() => form.phone.replace(/\D+/g, ''), [form.phone]);
+  const whatsappLink = phoneDigits ? `https://wa.me/${phoneDigits}` : '';
+
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = event.target;
+    setForm(prev => ({ ...prev, [name]: value }));
+    setStatus('idle');
+    setError(null);
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!user) return;
+    try {
+      setStatus('saving');
+      setError(null);
+      await updateCustomerAccount(user.id, {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        whatsapp: whatsappLink,
+        about: form.about.trim(),
+      });
+      await Promise.all([refresh(), refreshContact()]);
+      setStatus('success');
+    } catch (err) {
+      console.error('No se pudieron guardar los datos personales', err);
+      const message = err instanceof Error ? err.message : 'No se pudieron guardar los datos personales.';
+      setError(message);
+      setStatus('error');
+    }
+  };
+
+  if (!user) {
+    return <p className="text-secondary">Inicia sesión para actualizar tus datos personales.</p>;
+  }
+
+  return (
+    <form className="card shadow-sm" onSubmit={handleSubmit}>
+      <div className="card-body vstack gap-3">
+        <div>
+          <h2 className="h6 mb-1">Datos personales</h2>
+          <p className="text-secondary small mb-0">Actualiza la información que aparece en el sitio.</p>
+        </div>
+
+        <div className="row g-3">
+          <div className="col-12 col-md-6">
+            <label htmlFor="personal-name" className="form-label">Nombre</label>
+            <input
+              id="personal-name"
+              name="name"
+              className="form-control"
+              value={form.name}
+              onChange={handleChange}
+              disabled={status === 'saving'}
+              autoComplete="name"
+            />
+          </div>
+          <div className="col-12 col-md-6">
+            <label htmlFor="personal-email" className="form-label">Email</label>
+            <input
+              id="personal-email"
+              name="email"
+              type="email"
+              className="form-control"
+              value={form.email}
+              onChange={handleChange}
+              disabled={status === 'saving'}
+              autoComplete="email"
+            />
+          </div>
+        </div>
+
+        <div className="row g-3">
+          <div className="col-12 col-md-6">
+            <label htmlFor="personal-phone" className="form-label">Teléfono</label>
+            <input
+              id="personal-phone"
+              name="phone"
+              className="form-control"
+              value={form.phone}
+              onChange={handleChange}
+              disabled={status === 'saving'}
+              autoComplete="tel"
+            />
+          </div>
+          <div className="col-12 col-md-6">
+            <label htmlFor="personal-whatsapp" className="form-label">Enlace de WhatsApp</label>
+            <input
+              id="personal-whatsapp"
+              className="form-control"
+              value={whatsappLink}
+              readOnly
+            />
+            <div className="form-text">Se genera automáticamente a partir del número de teléfono.</div>
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor="personal-about" className="form-label">Acerca de</label>
+          <textarea
+            id="personal-about"
+            name="about"
+            className="form-control"
+            rows={6}
+            value={form.about}
+            onChange={handleChange}
+            disabled={status === 'saving'}
+          />
+        </div>
+
+        {error && <div className="alert alert-danger mb-0" role="alert">{error}</div>}
+        {status === 'success' && !error && (
+          <div className="alert alert-success mb-0" role="alert">
+            Datos actualizados correctamente.
+          </div>
+        )}
+
+        <div className="d-flex gap-2 justify-content-end">
+          <button type="submit" className="btn btn-primary" disabled={status === 'saving'}>
+            {status === 'saving' ? 'Guardando…' : 'Guardar cambios'}
+          </button>
+        </div>
+      </div>
+    </form>
+  );
+};
+
+export default PersonalDataForm;

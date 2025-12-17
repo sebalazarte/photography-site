@@ -68,7 +68,7 @@ const ContactPhotoManager: React.FC<ContactPhotoManagerProps> = ({ contactName, 
           )}
         </div>
 
-        {error && !loading && (
+        {error && !loading && isEditable && (
           <span className="text-danger small">{error}</span>
         )}
 
@@ -83,7 +83,7 @@ const ContactPhotoManager: React.FC<ContactPhotoManagerProps> = ({ contactName, 
             />
             <button
               type="button"
-              className="btn btn-sm btn-outline-primary"
+              className="btn btn-sm btn-primary"
               onClick={() => fileInputRef.current?.click()}
               disabled={status === 'saving'}
             >

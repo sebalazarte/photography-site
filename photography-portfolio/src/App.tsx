@@ -11,6 +11,8 @@ import AdminCustomers from './pages/AdminCustomers';
 import AppHeader from './components/master/AppHeader';
 import AppFooter from './components/master/AppFooter';
 import { ContactProfileProvider } from './context/ContactProfileContext';
+import ProfilePersonalData from './pages/ProfilePersonalData';
+import ProfileChangePassword from './pages/ProfileChangePassword';
 
 function App() {
   return (
@@ -27,6 +29,8 @@ function App() {
               <Route path="/admin/home" element={<AdminHome />} />
               <Route path="/admin/galleries" element={<AdminGalleries />} />
               <Route path="/admin/customers" element={<AdminCustomers />} />
+              <Route path="/profile/details" element={<ProfilePersonalData />} />
+              <Route path="/profile/password" element={<ProfileChangePassword />} />
             </Routes>
           </div>
         </main>

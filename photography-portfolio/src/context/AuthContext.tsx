@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
 import { fetchCurrentUser, parseLogout, type LoginResult } from '../api/auth';
 import { setParseContentOwner, setParseSessionToken } from '../api/client';
 
@@ -23,6 +23,7 @@ type AuthValue = {
   sessionToken: string | null;
   login: (auth: LoginResult) => void;
   logout: () => Promise<void>;
+  refresh: () => Promise<void>;
 };
 
 const STORAGE_KEY = 'pp_auth_v1';
@@ -128,6 +129,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     applyAuth(snapshot);
   };
 
+  const refresh = useCallback(async () => {
+    if (!sessionToken) return;
+    try {
+      const current = await fetchCurrentUser();
+      if (!current) {
+        applyAuth(null);
+        return;
+      }
+      applyAuth({
+        user: {
+          id: current.id,
+          username: current.username,
+          email: current.email,
+          name: current.name,
+          phone: current.phone,
+          whatsapp: current.whatsapp,
+          about: current.about,
+          roles: current.roles ?? [],
+        },
+        sessionToken,
+      });
+    } catch (error) {
+      console.warn('No se pudo actualizar la sesión actual', error);
+    }
+  }, [sessionToken]);
+
   const logout = async () => {
     try {
       await parseLogout();
@@ -138,7 +165,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const value = useMemo(() => ({ user, sessionToken, login, logout }), [user, sessionToken]);
+  const value = useMemo(() => ({ user, sessionToken, login, logout, refresh }), [user, sessionToken, refresh]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

@@ -83,6 +83,16 @@ const AppHeader: React.FC = () => {
                       </li>
                     )}
                     <li>
+                      <NavLink to="/profile/details" className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
+                        Datos personales
+                      </NavLink>
+                    </li>
+                    <li>
+                      <NavLink to="/profile/password" className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
+                        Cambiar contraseña
+                      </NavLink>
+                    </li>
+                    <li>
                       <hr className="dropdown-divider" />
                     </li>
                     <li>
