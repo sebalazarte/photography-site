@@ -1,12 +1,13 @@
 import { NavLink } from 'react-router-dom';
 import type React from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { useContactProfile } from '../../context/ContactProfileContext';
+import { useSite } from '../../context/SiteContext';
 
 const AppHeader: React.FC = () => {
   const { user, logout } = useAuth();
-  const { profile } = useContactProfile();
-  const contactName = profile?.name ?? profile?.username ?? 'Portfolio';
+  const { site } = useSite();
+  const contactName = site?.name ?? site?.username ?? 'Portfolio';
+
   const isAdmin = Boolean(user?.roles?.includes('admin'));
 
   return (

@@ -10,33 +10,36 @@ import AdminGalleries from './pages/AdminGalleries';
 import AdminCustomers from './pages/AdminCustomers';
 import AppHeader from './components/master/AppHeader';
 import AppFooter from './components/master/AppFooter';
+import { SiteProvider } from './context/SiteContext';
 import { ContactProfileProvider } from './context/ContactProfileContext';
 import ProfilePersonalData from './pages/ProfilePersonalData';
 import ProfileChangePassword from './pages/ProfileChangePassword';
 
 function App() {
   return (
-    <ContactProfileProvider>
-      <div className="App">
-        <AppHeader />
-        <main>
-          <div className="container py-3">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/galleries" element={<Galleries />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/admin/home" element={<AdminHome />} />
-              <Route path="/admin/galleries" element={<AdminGalleries />} />
-              <Route path="/admin/customers" element={<AdminCustomers />} />
-              <Route path="/profile/details" element={<ProfilePersonalData />} />
-              <Route path="/profile/password" element={<ProfileChangePassword />} />
-            </Routes>
-          </div>
-        </main>
-        <AppFooter />
-      </div>
-    </ContactProfileProvider>
+    <SiteProvider>
+      <ContactProfileProvider>
+        <div className="App">
+          <AppHeader />
+          <main>
+            <div className="container py-3">
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/galleries" element={<Galleries />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/admin/home" element={<AdminHome />} />
+                <Route path="/admin/galleries" element={<AdminGalleries />} />
+                <Route path="/admin/customers" element={<AdminCustomers />} />
+                <Route path="/profile/details" element={<ProfilePersonalData />} />
+                <Route path="/profile/password" element={<ProfileChangePassword />} />
+              </Routes>
+            </div>
+          </main>
+          <AppFooter />
+        </div>
+      </ContactProfileProvider>
+    </SiteProvider>
   );
 }
 

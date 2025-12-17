@@ -1,7 +1,16 @@
 import { backendRequest, HAS_BACKEND, isNetworkError } from './backend';
 import { parseRequest } from './client';
 import { SITE_ID } from '../constants';
-import type { ContactProfile } from './users';
+
+export interface SiteProfile {
+  id: string;
+  username: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  whatsapp?: string;
+  about?: string;
+}
 
 interface ParseSiteRecord {
   objectId: string;
@@ -28,7 +37,7 @@ const sanitizeValue = (value?: string | null) => {
   return trimmed ? trimmed : undefined;
 };
 
-const mapToContactProfile = (record: ParseSiteRecord): ContactProfile => {
+const mapToSiteProfile = (record: ParseSiteRecord): SiteProfile => {
   const identifier = sanitizeValue(record.slug) ?? sanitizeValue(record.handle) ?? record.objectId;
   return {
     id: record.objectId,
@@ -49,19 +58,19 @@ const fetchSiteEntryFromParse = async (): Promise<ParseSiteRecord | null> => {
   return entry ?? null;
 };
 
-const fetchSiteProfileFromParse = async (): Promise<ContactProfile | null> => {
+const fetchSiteProfileFromParse = async (): Promise<SiteProfile | null> => {
   const entry = await fetchSiteEntryFromParse();
   if (!entry) return null;
-  return mapToContactProfile(entry);
+  return mapToSiteProfile(entry);
 };
 
 const buildSiteQuery = () => `siteId=${encodeURIComponent(ensureSiteId())}`;
 
-export const fetchSiteProfile = async (): Promise<ContactProfile | null> => {
+export const fetchSiteProfile = async (): Promise<SiteProfile | null> => {
   if (HAS_BACKEND) {
     try {
       const query = buildSiteQuery();
-      return await backendRequest<ContactProfile | null>(`/api/site?${query}`);
+      return await backendRequest<SiteProfile | null>(`/api/site?${query}`);
     } catch (error) {
       if (!isNetworkError(error)) {
         throw error instanceof Error ? error : new Error('No se pudo obtener el sitio');
@@ -146,7 +155,7 @@ export const updateSiteProfile = async (input: UpdateSiteProfileInput) => {
   if (HAS_BACKEND) {
     try {
       const query = buildSiteQuery();
-      return await backendRequest<ContactProfile>(`/api/site?${query}`, {
+      return await backendRequest<SiteProfile>(`/api/site?${query}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

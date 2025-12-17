@@ -1,13 +1,13 @@
 import type React from 'react';
-import { useContactProfile } from '../../context/ContactProfileContext';
+import { useSite } from '../../context/SiteContext';
 import { formatWhatsappLink } from '../../utils/contact';
 
 const AppFooter: React.FC = () => {
-  const { profile, loading } = useContactProfile();
-  const contactName = profile?.name ?? profile?.username ?? 'Portfolio';
-  const email = profile?.email;
-  const phoneLabel = profile?.phone ?? profile?.whatsapp;
-  const whatsappLink = formatWhatsappLink(profile?.whatsapp);
+  const { site, loading } = useSite();
+  const contactName = site?.name ?? site?.name ?? 'Portfolio';
+  const email = site?.email;
+  const phoneLabel = site?.phone ?? site?.whatsapp;
+  const whatsappLink = formatWhatsappLink(site?.whatsapp);
 
   return (
     <footer className="App-footer border-top mt-5 pt-4">

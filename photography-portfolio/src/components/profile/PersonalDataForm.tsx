@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type React from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { useContactProfile } from '../../context/ContactProfileContext';
+import { useSite } from '../../context/SiteContext';
 import { updateSiteProfile } from '../../api/site';
 
 type PersonalDataFormState = {
@@ -18,22 +18,22 @@ const emptyForm: PersonalDataFormState = {
 
 const PersonalDataForm: React.FC = () => {
   const { user } = useAuth();
-  const { profile, refresh: refreshContact } = useContactProfile();
+  const { site, refresh: refreshSite } = useSite();
   const [form, setForm] = useState<PersonalDataFormState>(emptyForm);
   const [status, setStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!profile) {
+    if (!site) {
       setForm(emptyForm);
       return;
     }
     setForm({
-      name: profile.name ?? '',
-      email: profile.email ?? '',
-      phone: profile.phone ?? '',
+      name: site.name ?? '',
+      email: site.email ?? '',
+      phone: site.phone ?? '',
     });
-  }, [profile?.id, profile?.name, profile?.email, profile?.phone]);
+  }, [site?.id, site?.name, site?.email, site?.phone]);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = event.target;
@@ -44,7 +44,7 @@ const PersonalDataForm: React.FC = () => {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!user || !profile) return;
+    if (!user || !site) return;
     try {
       setStatus('saving');
       setError(null);
@@ -53,7 +53,7 @@ const PersonalDataForm: React.FC = () => {
         email: form.email.trim(),
         phone: form.phone.trim(),
       });
-      await refreshContact();
+      await refreshSite();
       setStatus('success');
     } catch (err) {
       console.error('No se pudieron guardar los datos personales', err);

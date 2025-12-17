@@ -49,6 +49,16 @@ export const fetchPrimaryContactProfile = async (): Promise<ContactProfile | nul
   return mapToContactProfile(user);
 };
 
+export const fetchCurrentContactProfile = async (): Promise<ContactProfile | null> => {
+  try {
+    const user = await parseRequest<ParseUser>('/users/me');
+    return mapToContactProfile(user);
+  } catch (error) {
+    console.warn('No se pudo obtener el perfil del usuario actual', error);
+    return null;
+  }
+};
+
 const fetchRoleByName = async (name: string): Promise<ParseRole | null> => {
   const where = encodeURIComponent(JSON.stringify({ name }));
   const data = await parseRequest<{ results?: ParseRole[] }>(`/roles?where=${where}&limit=1`);

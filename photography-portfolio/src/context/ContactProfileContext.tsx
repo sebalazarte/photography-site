@@ -1,52 +1,61 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import type { ContactProfile } from '../api/users';
-import { fetchSiteProfile } from '../api/site';
+import { useAuth } from './AuthContext';
+import { fetchCurrentContactProfile, type ContactProfile } from '../api/users';
 
 type ContactProfileState = {
-  profile: ContactProfile | null;
-  loading: boolean;
-  error: string | null;
-  refresh: () => Promise<void>;
+	profile: ContactProfile | null;
+	loading: boolean;
+	error: string | null;
+	refresh: () => Promise<void>;
 };
 
 const ContactProfileContext = createContext<ContactProfileState | undefined>(undefined);
 
 export const ContactProfileProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [profile, setProfile] = useState<ContactProfile | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+	const { user } = useAuth();
+	const [profile, setProfile] = useState<ContactProfile | null>(null);
+	const [loading, setLoading] = useState<boolean>(false);
+	const [error, setError] = useState<string | null>(null);
 
-  const loadProfile = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await fetchSiteProfile();
-      setProfile(result);
-    } catch (err) {
-      console.error('No se pudo cargar el perfil de contacto', err);
-      setProfile(null);
-      setError(err instanceof Error ? err.message : 'No se pudo cargar el contacto');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+	const loadProfile = useCallback(async () => {
+		if (!user) {
+			setProfile(null);
+			setError(null);
+			setLoading(false);
+			return;
+		}
 
-  useEffect(() => {
-    void loadProfile();
-  }, [loadProfile]);
+		setLoading(true);
+		setError(null);
+		try {
+			const result = await fetchCurrentContactProfile();
+			setProfile(result);
+		} catch (err) {
+			console.error('No se pudo cargar el perfil del usuario logueado', err);
+			const message = err instanceof Error ? err.message : 'No se pudo cargar el perfil del usuario.';
+			setProfile(null);
+			setError(message);
+		} finally {
+			setLoading(false);
+		}
+	}, [user?.id]);
 
-  const value = useMemo<ContactProfileState>(
-    () => ({ profile, loading, error, refresh: loadProfile }),
-    [profile, loading, error, loadProfile]
-  );
+	useEffect(() => {
+		void loadProfile();
+	}, [loadProfile]);
 
-  return <ContactProfileContext.Provider value={value}>{children}</ContactProfileContext.Provider>;
+	const value = useMemo<ContactProfileState>(
+		() => ({ profile, loading, error, refresh: loadProfile }),
+		[profile, loading, error, loadProfile]
+	);
+
+	return <ContactProfileContext.Provider value={value}>{children}</ContactProfileContext.Provider>;
 };
 
 export const useContactProfile = () => {
-  const context = useContext(ContactProfileContext);
-  if (!context) {
-    throw new Error('useContactProfile must be used within ContactProfileProvider');
-  }
-  return context;
+	const context = useContext(ContactProfileContext);
+	if (!context) {
+		throw new Error('useContactProfile must be used within ContactProfileProvider');
+	}
+	return context;
 };

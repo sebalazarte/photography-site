@@ -2,30 +2,30 @@ import { useState } from 'react';
 import type React from 'react';
 import { useAuth } from '../context/AuthContext';
 import ContactPhotoManager from '../components/photos/ContactPhotoManager';
-import { useContactProfile } from '../context/ContactProfileContext';
+import { useSite } from '../context/SiteContext';
 import { formatWhatsappLink } from '../utils/contact';
 import { updateSiteProfile } from '../api/site';
 
 const Contact: React.FC = () => {
   const { user } = useAuth();
-  const { profile, loading, error: profileError, refresh } = useContactProfile();
-  const contactName = profile?.name ?? profile?.username ?? 'Contacto';
-  const email = profile?.email;
-  const phoneLabel = profile?.phone ?? profile?.whatsapp;
-  const whatsappLink = formatWhatsappLink(profile?.whatsapp);
+  const { site, loading, error: siteError, refresh: refreshSite } = useSite();
+  const contactName = site?.name ?? site?.username ?? 'Contacto';
+  const email = site?.email;
+  const phoneLabel = site?.phone ?? site?.whatsapp;
+  const whatsappLink = formatWhatsappLink(site?.whatsapp);
   const hasContactMethods = Boolean(email || (whatsappLink && phoneLabel));
-  const aboutContent = (profile?.about ?? '').trim() || '';
+  const aboutContent = (site?.about ?? '').trim() || '';
   const aboutParagraphs = aboutContent
     .split(/\r?\n\s*\r?\n/)
     .map(paragraph => paragraph.trim())
     .filter(Boolean);
   const [editingAbout, setEditingAbout] = useState(false);
-  const [aboutDraft, setAboutDraft] = useState(profile?.about ?? '');
+  const [aboutDraft, setAboutDraft] = useState(site?.about ?? '');
   const [aboutStatus, setAboutStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [aboutError, setAboutError] = useState<string | null>(null);
 
   const startEditing = () => {
-    setAboutDraft(profile?.about ?? '');
+    setAboutDraft(site?.about ?? '');
     setAboutError(null);
     setAboutStatus('idle');
     setEditingAbout(true);
@@ -33,19 +33,19 @@ const Contact: React.FC = () => {
 
   const cancelEditing = () => {
     setEditingAbout(false);
-    setAboutDraft(profile?.about ?? '');
+    setAboutDraft(site?.about ?? '');
     setAboutError(null);
     setAboutStatus('idle');
   };
 
   const handleAboutSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!user || !profile) return;
+    if (!user || !site) return;
     try {
       setAboutStatus('saving');
       setAboutError(null);
       await updateSiteProfile({ about: aboutDraft.trim() });
-      await refresh();
+      await refreshSite();
       setAboutStatus('success');
       setEditingAbout(false);
     } catch (err) {
@@ -132,8 +132,8 @@ const Contact: React.FC = () => {
             <section>
               <p className="text-secondary mb-4">Podés escribirme o enviar un mensaje directo.</p>
               {loading && <span className="text-secondary small">Cargando datos de contacto...</span>}
-              {profileError && <span className="text-danger small">{profileError}</span>}
-              {!loading && !profileError && !hasContactMethods && (
+              {siteError && <span className="text-danger small">{siteError}</span>}
+              {!loading && !siteError && !hasContactMethods && (
                 <span className="text-secondary small">Los datos de contacto aún no están disponibles.</span>
               )}
               <div className="d-flex flex-column flex-md-row gap-3">
