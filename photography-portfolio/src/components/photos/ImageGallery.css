@@ -72,29 +72,30 @@
   transform: none;
 }
 
+
 .gallery-toast {
   position: fixed;
   bottom: 1.5rem;
   right: 1.5rem;
   left: auto;
   transform: none;
-  background: rgba(5, 5, 5, 0.95);
+  background: #111 !important;
+  opacity: 0.85 !important;
+  color: #fff;
   min-width: 260px;
   padding: 0.75rem 1rem;
-  border-radius: 12px;
+  border-radius: 999px;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  backdrop-filter: blur(8px);
-  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
   z-index: 1050;
-  color: #fff;
 }
 
 .gallery-toast--success,
 .gallery-toast--error {
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .gallery-toast__icon {
@@ -104,13 +105,13 @@
   width: 28px;
   height: 28px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.35);
   color: #fff;
 }
 
 .gallery-toast .toast-body {
   background: transparent;
-  color: inherit;
+  color: #fff;
 }
 
 .masonry-item__trigger {

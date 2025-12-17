@@ -161,7 +161,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ folder, photos }) => {
       if (!added) {
         setNotice({ type: 'error', message: 'Esta foto ya está destacada en el inicio.' });
       } else {
-        setNotice({ type: 'success', message: 'Foto enviada al inicio correctamente.' });
+        setNotice({ type: 'success', message: 'Foto enviada al inicio.' });
       }
     } catch (error) {
       console.error('No se pudo enviar la foto al inicio', error);
