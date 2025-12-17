@@ -4,10 +4,10 @@ import { useAuth } from '../context/AuthContext';
 import ContactPhotoManager from '../components/photos/ContactPhotoManager';
 import { useContactProfile } from '../context/ContactProfileContext';
 import { formatWhatsappLink } from '../utils/contact';
-import { updateCustomerAccount } from '../api/users';
+import { updateSiteProfile } from '../api/site';
 
 const Contact: React.FC = () => {
-  const { user, refresh: refreshAuth } = useAuth();
+  const { user } = useAuth();
   const { profile, loading, error: profileError, refresh } = useContactProfile();
   const contactName = profile?.name ?? profile?.username ?? 'Contacto';
   const email = profile?.email;
@@ -40,12 +40,12 @@ const Contact: React.FC = () => {
 
   const handleAboutSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!user || !profile?.id) return;
+    if (!user || !profile) return;
     try {
       setAboutStatus('saving');
       setAboutError(null);
-      await updateCustomerAccount(profile.id, { about: aboutDraft.trim() });
-      await Promise.all([refresh(), refreshAuth()]);
+      await updateSiteProfile({ about: aboutDraft.trim() });
+      await refresh();
       setAboutStatus('success');
       setEditingAbout(false);
     } catch (err) {

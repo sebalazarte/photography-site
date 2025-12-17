@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useContactProfile } from '../../context/ContactProfileContext';
-import { updateCustomerAccount } from '../../api/users';
+import { updateSiteProfile } from '../../api/site';
 
 type PersonalDataFormState = {
   name: string;
@@ -19,24 +19,24 @@ const emptyForm: PersonalDataFormState = {
 };
 
 const PersonalDataForm: React.FC = () => {
-  const { user, refresh } = useAuth();
-  const { refresh: refreshContact } = useContactProfile();
+  const { user } = useAuth();
+  const { profile, refresh: refreshContact } = useContactProfile();
   const [form, setForm] = useState<PersonalDataFormState>(emptyForm);
   const [status, setStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) {
+    if (!profile) {
       setForm(emptyForm);
       return;
     }
     setForm({
-      name: user.name ?? '',
-      email: user.email ?? '',
-      phone: user.phone ?? '',
-      about: user.about ?? '',
+      name: profile.name ?? '',
+      email: profile.email ?? '',
+      phone: profile.phone ?? '',
+      about: profile.about ?? '',
     });
-  }, [user?.id, user?.name, user?.email, user?.phone, user?.about]);
+  }, [profile?.id, profile?.name, profile?.email, profile?.phone, profile?.about]);
 
   const phoneDigits = useMemo(() => form.phone.replace(/\D+/g, ''), [form.phone]);
   const whatsappLink = phoneDigits ? `https://wa.me/${phoneDigits}` : '';
@@ -50,18 +50,18 @@ const PersonalDataForm: React.FC = () => {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!user) return;
+    if (!user || !profile) return;
     try {
       setStatus('saving');
       setError(null);
-      await updateCustomerAccount(user.id, {
+      await updateSiteProfile({
         name: form.name.trim(),
         email: form.email.trim(),
         phone: form.phone.trim(),
         whatsapp: whatsappLink,
         about: form.about.trim(),
       });
-      await Promise.all([refresh(), refreshContact()]);
+      await refreshContact();
       setStatus('success');
     } catch (err) {
       console.error('No se pudieron guardar los datos personales', err);
