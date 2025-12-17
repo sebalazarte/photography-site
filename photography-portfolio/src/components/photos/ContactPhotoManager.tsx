@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react';
 import type React from 'react';
-import { useFolderPhotos } from '../hooks/useFolderPhotos';
-import { CONTACT_FOLDER } from '../constants';
-import { deletePhotoFromFolder, uploadToFolder } from '../api/photos';
+import { useFolderPhotos } from '../../hooks/useFolderPhotos';
+import { CONTACT_FOLDER } from '../../constants';
+import { deletePhotoFromFolder, uploadToFolder } from '../../api/photos';
 
 interface ContactPhotoManagerProps {
   contactName: string;

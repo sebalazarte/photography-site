@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useAuth } from '../context/AuthContext';
-import ContactPhotoManager from '../components/ContactPhotoManager';
+import ContactPhotoManager from '../components/photos/ContactPhotoManager';
 import { useContactProfile } from '../context/ContactProfileContext';
 import { formatWhatsappLink } from '../utils/contact';
 

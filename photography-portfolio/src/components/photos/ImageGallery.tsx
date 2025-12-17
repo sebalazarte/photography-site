@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { StoredPhoto } from '../types/photos';
+import type { StoredPhoto } from '../../types/photos';
 import './ImageGallery.css';
-import { useFolderPhotos } from '../hooks/useFolderPhotos';
+import { useFolderPhotos } from '../../hooks/useFolderPhotos';
 import LightboxModal from './LightboxModal';
-import { useAuth } from '../context/AuthContext';
-import { updatePhotoOrder } from '../api/photos';
+import { useAuth } from '../../context/AuthContext';
+import { updatePhotoOrder } from '../../api/photos';
 
 interface ImageGalleryProps {
   folder: string;
@@ -154,41 +154,41 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ folder, photos }) => {
       )}
       <div className="masonry-grid">
         {galleryItems.map((photo, index) => {
-        const isDragging = draggedId === photo.id;
-        const isOver = dragOverId === photo.id;
-        const figureClass = `masonry-item${canReorder ? ' draggable' : ''}${isDragging ? ' is-dragging' : ''}${isOver ? ' drag-over' : ''}`;
+          const isDragging = draggedId === photo.id;
+          const isOver = dragOverId === photo.id;
+          const figureClass = `masonry-item${canReorder ? ' draggable' : ''}${isDragging ? ' is-dragging' : ''}${isOver ? ' drag-over' : ''}`;
 
-        const dragProps = canReorder ? {
-          draggable: true,
-          onDragStart: (event: React.DragEvent<HTMLElement>) => handleDragStart(event, photo.id),
-          onDragOver: (event: React.DragEvent<HTMLElement>) => handleDragOver(event, photo.id),
-          onDragLeave: (event: React.DragEvent<HTMLElement>) => handleDragLeave(event, photo.id),
-          onDrop: (event: React.DragEvent<HTMLElement>) => void handleDrop(event, photo.id),
-          onDragEnd: handleDragEnd,
-        } : {};
+          const dragProps = canReorder ? {
+            draggable: true,
+            onDragStart: (event: React.DragEvent<HTMLElement>) => handleDragStart(event, photo.id),
+            onDragOver: (event: React.DragEvent<HTMLElement>) => handleDragOver(event, photo.id),
+            onDragLeave: (event: React.DragEvent<HTMLElement>) => handleDragLeave(event, photo.id),
+            onDrop: (event: React.DragEvent<HTMLElement>) => void handleDrop(event, photo.id),
+            onDragEnd: handleDragEnd,
+          } : {};
 
-        return (
-          <figure
-            key={photo.id}
-            className={figureClass}
-            {...dragProps}
-          >
-            <button
-              type="button"
-              className="masonry-item__trigger"
-              onClick={() => openModal(index)}
-              disabled={savingOrder}
+          return (
+            <figure
+              key={photo.id}
+              className={figureClass}
+              {...dragProps}
             >
-              <img
-                src={photo.url}
-                alt={photo.originalName}
-                loading={index < 4 ? 'eager' : 'lazy'}
-                decoding="async"
-              />
-            </button>
-          </figure>
-        );
-      })}
+              <button
+                type="button"
+                className="masonry-item__trigger"
+                onClick={() => openModal(index)}
+                disabled={savingOrder}
+              >
+                <img
+                  src={photo.url}
+                  alt={photo.originalName}
+                  loading={index < 4 ? 'eager' : 'lazy'}
+                  decoding="async"
+                />
+              </button>
+            </figure>
+          );
+        })}
       </div>
       {activeIndex !== null && galleryItems[activeIndex] && (
         <LightboxModal

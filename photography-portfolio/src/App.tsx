@@ -1,5 +1,5 @@
 import './App.css';
-import './components/UploadPhotos.css';
+import './components/photos/UploadPhotos.css';
 import { Route, Routes } from 'react-router-dom';
 import Home from './pages/Home';
 import Galleries from './pages/Galleries';
@@ -8,8 +8,8 @@ import Login from './pages/Login';
 import AdminHome from './pages/AdminHome';
 import AdminGalleries from './pages/AdminGalleries';
 import AdminCustomers from './pages/AdminCustomers';
-import AppHeader from './components/AppHeader';
-import AppFooter from './components/AppFooter';
+import AppHeader from './components/master/AppHeader';
+import AppFooter from './components/master/AppFooter';
 import { ContactProfileProvider } from './context/ContactProfileContext';
 
 function App() {

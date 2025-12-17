@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useState } from 'react';
-import type { GalleryDTO } from '../api/galleries';
+import type { GalleryDTO } from '../../api/galleries';
 
 const iconProps = {
   width: 16,
@@ -181,16 +181,16 @@ const GalleryAdminPanel: React.FC<GalleryAdminPanelProps> = ({
                             aria-label="Guardar nombre de galería"
                             disabled={isRenaming || !editingName.trim() || editingName.trim() === gallery.name}
                           >
-                              {isRenaming ? <PendingIcon /> : <SaveIcon />}
+                            {isRenaming ? <PendingIcon /> : <SaveIcon />}
                           </button>
                           <button
                             type="button"
-                              className="btn btn-sm btn-outline-secondary icon-button"
+                            className="btn btn-sm btn-outline-secondary icon-button"
                             onClick={cancelEditing}
-                              aria-label="Cancelar edición de galería"
+                            aria-label="Cancelar edición de galería"
                             disabled={isRenaming}
                           >
-                              <CloseIcon />
+                            <CloseIcon />
                           </button>
                         </div>
                       </form>
@@ -218,11 +218,11 @@ const GalleryAdminPanel: React.FC<GalleryAdminPanelProps> = ({
                           <button
                             type="button"
                             onClick={() => handleDelete(gallery)}
-                              className="btn btn-sm btn-outline-danger icon-button"
+                            className="btn btn-sm btn-outline-danger icon-button"
                             aria-label="Eliminar galería"
                             disabled={disabled || isDeleting || Boolean(renamingSlug)}
                           >
-                              {isDeleting ? <PendingIcon /> : <TrashIcon />}
+                            {isDeleting ? <PendingIcon /> : <TrashIcon />}
                           </button>
                         </div>
                       </div>

@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import type React from 'react';
-import { useAuth } from '../context/AuthContext';
-import { useContactProfile } from '../context/ContactProfileContext';
+import { useAuth } from '../../context/AuthContext';
+import { useContactProfile } from '../../context/ContactProfileContext';
 
 const AppHeader: React.FC = () => {
   const { user, logout } = useAuth();

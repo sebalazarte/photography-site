@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type React from 'react';
-import ImageGallery from '../components/ImageGallery';
-import GalleryList from '../components/GalleryList';
+import ImageGallery from '../components/photos/ImageGallery';
+import GalleryList from '../components/photos/GalleryList';
 import { galleryFolderKey } from '../constants';
 import { fetchGalleries, type GalleryDTO } from '../api/galleries';
 import { useFolderPhotos } from '../hooks/useFolderPhotos';

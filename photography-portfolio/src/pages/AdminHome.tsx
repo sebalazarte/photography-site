@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router-dom';
-import UploadPhotos from '../components/UploadPhotos';
+import UploadPhotos from '../components/photos/UploadPhotos';
 import { HOME_FOLDER } from '../constants';
 import { useAuth } from '../context/AuthContext';
 import { useFolderPhotos } from '../hooks/useFolderPhotos';

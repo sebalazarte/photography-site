@@ -1,6 +1,6 @@
 import type React from 'react';
-import { useContactProfile } from '../context/ContactProfileContext';
-import { formatWhatsappLink } from '../utils/contact';
+import { useContactProfile } from '../../context/ContactProfileContext';
+import { formatWhatsappLink } from '../../utils/contact';
 
 const AppFooter: React.FC = () => {
   const { profile, loading } = useContactProfile();

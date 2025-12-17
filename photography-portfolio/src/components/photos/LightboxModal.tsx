@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import type { StoredPhoto } from '../types/photos';
+import type { StoredPhoto } from '../../types/photos';
 import './ImageGallery.css';
 
 interface LightboxModalProps {

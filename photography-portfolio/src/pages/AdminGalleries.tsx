@@ -1,12 +1,12 @@
 import { Navigate } from 'react-router-dom';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import UploadPhotos from '../components/UploadPhotos';
+import UploadPhotos from '../components/photos/UploadPhotos';
 import { galleryFolderKey } from '../constants';
 import { useAuth } from '../context/AuthContext';
 import { createGallery, deleteGallery as deleteGalleryApi, fetchGalleries, updateGalleryName, type GalleryDTO } from '../api/galleries';
 import { listFolderPhotos } from '../api/photos';
 import { useFolderPhotos } from '../hooks/useFolderPhotos';
-import GalleryAdminPanel from '../components/GalleryAdminPanel';
+import GalleryAdminPanel from '../components/photos/GalleryAdminPanel';
 
 const AdminGalleries = () => {
   const { user } = useAuth();

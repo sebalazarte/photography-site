@@ -1,5 +1,5 @@
 import type React from 'react';
-import type { GalleryDTO } from '../api/galleries';
+import type { GalleryDTO } from '../../api/galleries';
 
 interface GalleryListProps {
   galleries: GalleryDTO[];

@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useEffect, useId } from 'react';
-import type { StoredPhoto } from '../types/photos';
-import { deletePhotoFromFolder, listFolderPhotos, updatePhotoOrder, uploadToFolder } from '../api/photos';
-import { useAuth } from '../context/AuthContext';
-import { useContactProfile } from '../context/ContactProfileContext';
+import type { StoredPhoto } from '../../types/photos';
+import { deletePhotoFromFolder, listFolderPhotos, updatePhotoOrder, uploadToFolder } from '../../api/photos';
+import { useAuth } from '../../context/AuthContext';
+import { useContactProfile } from '../../context/ContactProfileContext';
 
 interface UploadPhotosProps {
   folder: string;
@@ -188,7 +188,6 @@ const UploadPhotos: React.FC<UploadPhotosProps> = ({ folder, photos, onPhotosCha
     }
   }, [draggedId, effectivePhotos, folder, sync]);
 
-
   return (
     <div className="upload-container">
       <div
@@ -253,18 +252,18 @@ const UploadPhotos: React.FC<UploadPhotosProps> = ({ folder, photos, onPhotosCha
                     aria-grabbed={isDraggingThis}
                     tabIndex={0}
                   >
-                  <img src={photo.url} alt={photo.originalName} className="card-img-top" />
-                  <div className="photo-info card-body d-flex justify-content-between align-items-center">
-                    <span className="photo-name" title={photo.originalName}>{photo.originalName}</span>
-                    <button
-                      className="btn btn-sm btn-outline-danger"
-                      onClick={() => removePhoto(photo.id)}
-                    >
-                      Eliminar
-                    </button>
+                    <img src={photo.url} alt={photo.originalName} className="card-img-top" />
+                    <div className="photo-info card-body d-flex justify-content-between align-items-center">
+                      <span className="photo-name" title={photo.originalName}>{photo.originalName}</span>
+                      <button
+                        className="btn btn-sm btn-outline-danger"
+                        onClick={() => removePhoto(photo.id)}
+                      >
+                        Eliminar
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
               );
             })}
           </div>

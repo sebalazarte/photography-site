@@ -1,4 +1,4 @@
-import ImageGallery from '../components/ImageGallery';
+import ImageGallery from '../components/photos/ImageGallery';
 import { HOME_FOLDER } from '../constants';
 import { useFolderPhotos } from '../hooks/useFolderPhotos';
 
