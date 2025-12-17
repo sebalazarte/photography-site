@@ -1,5 +1,5 @@
 import { absolutizeFromApi, getParseContentOwner, parseRequest, runParseBatch, uploadParseFile } from './client';
-import { applySiteFilter, SITE_ID } from '../constants';
+import { applySiteFilter, SITE_ID, HOME_FOLDER } from '../constants';
 import type { StoredPhoto } from '../types/photos';
 
 const PHOTO_ORDER_PATH = '/classes/PhotoOrder';
@@ -142,4 +142,39 @@ export const updatePhotoOrder = async (folder: string, order: string[]) => {
     });
   }
   return fetchPhotoOrders(folder);
+};
+
+export const featurePhotoOnHome = async (photo: StoredPhoto) => {
+  const ownerId = requireOwnerId();
+  const fileName = photo.filename?.trim() || photo.id;
+  if (!fileName) {
+    throw new Error('La foto seleccionada no tiene un archivo asociado.');
+  }
+
+  const homePhotos = await fetchPhotoOrders(HOME_FOLDER);
+  if (homePhotos.some(item => item.filename === fileName || item.id === photo.id)) {
+    return false;
+  }
+
+  const body = {
+    folderKey: HOME_FOLDER,
+    photoId: fileName,
+    position: homePhotos.length,
+    originalName: photo.originalName,
+    fileSize: photo.size ?? null,
+    photoFile: {
+      __type: 'File' as const,
+      name: fileName,
+    },
+    user: buildUserPointer(ownerId),
+    ...(SITE_ID ? { siteId: SITE_ID } : {}),
+  };
+
+  await parseRequest(PHOTO_ORDER_PATH, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  return true;
 };

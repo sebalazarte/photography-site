@@ -4,7 +4,8 @@ import './ImageGallery.css';
 import { useFolderPhotos } from '../../hooks/useFolderPhotos';
 import LightboxModal from './LightboxModal';
 import { useAuth } from '../../context/AuthContext';
-import { updatePhotoOrder } from '../../api/photos';
+import { featurePhotoOnHome, updatePhotoOrder } from '../../api/photos';
+import { HOME_FOLDER } from '../../constants';
 
 interface ImageGalleryProps {
   folder: string;
@@ -22,6 +23,16 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ folder, photos }) => {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [savingOrder, setSavingOrder] = useState(false);
+  const [featuringId, setFeaturingId] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => {
+      setNotice(null);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [notice]);
 
   useEffect(() => {
     setOrderedItems(prev => {
@@ -140,6 +151,29 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ folder, photos }) => {
     }
   }, [canReorder, draggedId, folder, orderedItems]);
 
+  const handleSendToHome = useCallback(async (photo: StoredPhoto) => {
+    if (!canReorder || featuringId === photo.id) {
+      return;
+    }
+    try {
+      setFeaturingId(photo.id);
+      const added = await featurePhotoOnHome(photo);
+      if (!added) {
+        setNotice({ type: 'error', message: 'Esta foto ya está destacada en el inicio.' });
+      } else {
+        setNotice({ type: 'success', message: 'Foto enviada al inicio correctamente.' });
+      }
+    } catch (error) {
+      console.error('No se pudo enviar la foto al inicio', error);
+      setNotice({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'No se pudo enviar la foto al inicio',
+      });
+    } finally {
+      setFeaturingId(null);
+    }
+  }, [canReorder, featuringId]);
+
   if (!galleryItems.length) {
     return <p className="text-secondary">{loading ? 'Cargando fotos...' : 'No hay fotos para mostrar aún.'}</p>;
   }
@@ -167,12 +201,47 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ folder, photos }) => {
             onDragEnd: handleDragEnd,
           } : {};
 
+          const isHomeFolder = folder === HOME_FOLDER;
           return (
             <figure
               key={photo.id}
               className={figureClass}
               {...dragProps}
             >
+              {canReorder && !isHomeFolder && (
+                <div className="masonry-item__actions">
+                  <button
+                    type="button"
+                    className="masonry-item__action"
+                    aria-label="Enviar al inicio"
+                    title="Enviar al inicio"
+                    disabled={savingOrder || featuringId === photo.id}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      void handleSendToHome(photo);
+                    }}
+                  >
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      role="img"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M4 11.5L12 4l8 7.5V20a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1v-8.5z"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinejoin="round"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              )}
               <button
                 type="button"
                 className="masonry-item__trigger"
@@ -198,6 +267,27 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ folder, photos }) => {
           onPrev={showPrev}
           onNext={showNext}
         />
+      )}
+      {notice && (
+        <div
+          className={`gallery-toast gallery-toast--${notice.type} toast align-items-center text-white border-0 show`}
+          role="status"
+        >
+          <div className="d-flex align-items-center">
+            <span className="gallery-toast__icon" aria-hidden="true">
+              {notice.type === 'success' ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </span>
+            <div className="toast-body ps-2 pe-3">{notice.message}</div>
+          </div>
+        </div>
       )}
     </div>
   );

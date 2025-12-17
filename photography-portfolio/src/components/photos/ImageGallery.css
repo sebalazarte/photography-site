@@ -8,6 +8,7 @@
   break-inside: avoid;
   display: block;
   overflow: hidden;
+  position: relative;
 }
 
 .masonry-item.draggable {
@@ -28,6 +29,88 @@
   border: 2px dashed #0d6efd;
   border-radius: 6px;
   pointer-events: none;
+}
+
+.masonry-item__actions {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.65rem;
+  display: flex;
+  gap: 0.5rem;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.masonry-item__action {
+  pointer-events: auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0, 0, 0);
+  color: #fff;
+  transition: background 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+}
+
+.masonry-item__action:hover,
+.masonry-item__action:focus-visible {
+  background: rgba(13, 110, 253, 0.85);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.masonry-item__action:focus-visible {
+  box-shadow: 0 0 0 2px #fff6;
+}
+
+.masonry-item__action:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.gallery-toast {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  left: auto;
+  transform: none;
+  background: rgba(5, 5, 5, 0.95);
+  min-width: 260px;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 1050;
+  color: #fff;
+}
+
+.gallery-toast--success,
+.gallery-toast--error {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.gallery-toast__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.gallery-toast .toast-body {
+  background: transparent;
+  color: inherit;
 }
 
 .masonry-item__trigger {
