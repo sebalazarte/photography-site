@@ -7,6 +7,7 @@ const AppHeader: React.FC = () => {
   const { user, logout } = useAuth();
   const { profile } = useContactProfile();
   const contactName = profile?.name ?? profile?.username ?? 'Portfolio';
+  const isAdmin = Boolean(user?.roles?.includes('admin'));
 
   return (
     <header className="App-header mb-4">
@@ -66,14 +67,21 @@ const AppHeader: React.FC = () => {
                   <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
                     <li>
                       <NavLink to="/admin/home" className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-                        Adm. Home
+                        Inicio
                       </NavLink>
                     </li>
                     <li>
                       <NavLink to="/admin/galleries" className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-                        Adm. Galerías
+                        Galerías
                       </NavLink>
                     </li>
+                    {isAdmin && (
+                      <li>
+                        <NavLink to="/admin/customers" className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
+                          Clientes
+                        </NavLink>
+                      </li>
+                    )}
                     <li>
                       <hr className="dropdown-divider" />
                     </li>

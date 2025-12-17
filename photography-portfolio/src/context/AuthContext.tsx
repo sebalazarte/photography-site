@@ -10,6 +10,7 @@ export type User = {
   phone?: string;
   whatsapp?: string;
   about?: string;
+  roles?: string[];
 };
 
 type AuthSnapshot = {
@@ -45,6 +46,7 @@ const toSnapshot = (auth: LoginResult): AuthSnapshot => ({
     phone: auth.user.phone,
     whatsapp: auth.user.whatsapp,
     about: auth.user.about,
+    roles: auth.user.roles ?? [],
   },
   sessionToken: auth.sessionToken,
 });
@@ -54,12 +56,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [sessionToken, setSessionToken] = useState<string | null>(null);
 
   const applyAuth = (snapshot: AuthSnapshot | null) => {
-    setUser(snapshot?.user ?? null);
-    const token = snapshot?.sessionToken ?? null;
-    setSessionToken(token);
-    setParseSessionToken(token);
-    setParseContentOwner(snapshot?.user?.id ?? null);
-    persistSnapshot(snapshot);
+    if (snapshot?.user) {
+      const normalizedUser: User = { ...snapshot.user, roles: snapshot.user.roles ?? [] };
+      setUser(normalizedUser);
+      setParseContentOwner(normalizedUser.id ?? null);
+      const token = snapshot.sessionToken ?? null;
+      setSessionToken(token);
+      setParseSessionToken(token);
+      persistSnapshot({ ...snapshot, user: normalizedUser });
+      return;
+    }
+
+    setUser(null);
+    setSessionToken(null);
+    setParseSessionToken(null);
+    setParseContentOwner(null);
+    persistSnapshot(null);
   };
 
   useEffect(() => {
@@ -88,6 +100,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 phone: current.phone,
                 whatsapp: current.whatsapp,
                 about: current.about,
+                roles: current.roles ?? [],
               },
               sessionToken: snapshot.sessionToken,
             });

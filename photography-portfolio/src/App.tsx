@@ -7,6 +7,7 @@ import Contact from './pages/Contact';
 import Login from './pages/Login';
 import AdminHome from './pages/AdminHome';
 import AdminGalleries from './pages/AdminGalleries';
+import AdminCustomers from './pages/AdminCustomers';
 import AppHeader from './components/AppHeader';
 import AppFooter from './components/AppFooter';
 import { ContactProfileProvider } from './context/ContactProfileContext';
@@ -25,6 +26,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/admin/home" element={<AdminHome />} />
               <Route path="/admin/galleries" element={<AdminGalleries />} />
+              <Route path="/admin/customers" element={<AdminCustomers />} />
             </Routes>
           </div>
         </main>

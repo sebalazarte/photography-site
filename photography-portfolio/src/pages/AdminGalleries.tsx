@@ -10,6 +10,8 @@ import GalleryAdminPanel from '../components/GalleryAdminPanel';
 
 const AdminGalleries = () => {
   const { user } = useAuth();
+  const roles = user?.roles ?? [];
+  const hasAccess = roles.includes('admin') || roles.includes('customer');
   const [galleries, setGalleries] = useState<GalleryDTO[]>([]);
   const [newGalleryName, setNewGalleryName] = useState('');
   const [selectedGalleryId, setSelectedGalleryId] = useState<string | null>(null);
@@ -133,6 +135,10 @@ const AdminGalleries = () => {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (!hasAccess) {
+    return <Navigate to="/" replace />;
   }
 
   return (

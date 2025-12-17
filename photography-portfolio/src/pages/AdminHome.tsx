@@ -6,10 +6,16 @@ import { useFolderPhotos } from '../hooks/useFolderPhotos';
 
 const AdminHome = () => {
   const { user } = useAuth();
+  const roles = user?.roles ?? [];
+  const hasAccess = roles.includes('admin') || roles.includes('customer');
   const { photos, setPhotos } = useFolderPhotos(HOME_FOLDER);
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (!hasAccess) {
+    return <Navigate to="/" replace />;
   }
 
   return (

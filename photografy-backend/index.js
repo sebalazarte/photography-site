@@ -8,6 +8,7 @@ const PARSE_SERVER_URL = process.env.PARSE_SERVER_URL || 'https://parseapi.back4
 const PARSE_APP_ID = process.env.PARSE_APP_ID;
 const PARSE_REST_KEY = process.env.PARSE_REST_KEY;
 const PARSE_JS_KEY = process.env.PARSE_JS_KEY || '';
+const PARSE_MASTER_KEY = process.env.PARSE_MASTER_KEY || '';
 
 if (!PARSE_APP_ID || !PARSE_REST_KEY) {
   console.warn('Faltan PARSE_APP_ID o PARSE_REST_KEY. Configura las variables de entorno antes de iniciar el servidor.');
@@ -19,6 +20,9 @@ const withParseHeaders = (inputHeaders = {}) => {
   headers.set('X-Parse-REST-API-Key', PARSE_REST_KEY || '');
   if (PARSE_JS_KEY) {
     headers.set('X-Parse-JavaScript-Key', PARSE_JS_KEY);
+  }
+  if (PARSE_MASTER_KEY) {
+    headers.set('X-Parse-Master-Key', PARSE_MASTER_KEY);
   }
   if (!headers.has('Accept')) {
     headers.set('Accept', 'application/json');
@@ -113,6 +117,56 @@ const galleryFolderKey = (slug) => `galleries/${slug}`;
 
 const encodeWhere = (query) => encodeURIComponent(JSON.stringify(query));
 
+const escapeRegex = (value) => (typeof value === 'string' ? value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '');
+
+const mapToCustomerRecord = (entry) => ({
+  id: entry.objectId,
+  username: entry.username,
+  name: entry.name ?? entry.username,
+  email: entry.email ?? null,
+  phone: entry.phone ?? null,
+  whatsapp: entry.whatsapp ?? null,
+  about: entry.acercaDe ?? null,
+});
+
+const fetchRoleByName = async (name) => {
+  const where = encodeWhere({
+    name: {
+      $regex: `^${escapeRegex(name)}$`,
+      $options: 'i',
+    },
+  });
+  const data = await parseRequest(`/roles?where=${where}&limit=1`);
+  const roles = Array.isArray(data?.results) ? data.results : [];
+  return roles[0] ?? null;
+};
+
+const addUserToRole = async (userId, roleId) => {
+  await parseRequest(`/roles/${roleId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      users: {
+        __op: 'AddRelation',
+        objects: [
+          {
+            __type: 'Pointer',
+            className: '_User',
+            objectId: userId,
+          },
+        ],
+      },
+    }),
+  });
+};
+
+const fetchUserById = async (userId) => {
+  const entry = await parseRequest(`/users/${userId}`);
+  return mapToCustomerRecord(entry);
+};
+
 const mapPhoto = (entry, index) => ({
   id: entry.objectId,
   filename: entry.photoId ?? entry.photoFile?.name ?? entry.objectId,
@@ -195,6 +249,128 @@ app.use(cors());
 app.use(express.json());
 
 const upload = multer({ storage: multer.memoryStorage() });
+
+app.get('/api/customers', async (req, res, next) => {
+  try {
+    const roleName = typeof req.query.role === 'string' && req.query.role.trim() ? req.query.role.trim() : 'customer';
+    const role = await fetchRoleByName(roleName);
+    if (!role) {
+      return res.json([]);
+    }
+    const where = encodeWhere({
+      $relatedTo: {
+        object: {
+          __type: 'Pointer',
+          className: '_Role',
+          objectId: role.objectId,
+        },
+        key: 'users',
+      },
+    });
+    const data = await parseRequest(`/users?where=${where}&order=username`);
+    const users = Array.isArray(data?.results) ? data.results.map(mapToCustomerRecord) : [];
+    res.json(users);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/customers', async (req, res, next) => {
+  try {
+    const {
+      username: rawUsername,
+      password: rawPassword,
+      email,
+      name,
+      phone,
+      whatsapp,
+      about,
+      roleName,
+    } = req.body || {};
+
+    const username = typeof rawUsername === 'string' ? rawUsername.trim() : '';
+    const password = typeof rawPassword === 'string' ? rawPassword.trim() : '';
+
+    if (!username || !password) {
+      return res.status(400).json({ message: 'Usuario y contraseña son obligatorios.' });
+    }
+
+    const payload = {
+      username,
+      password,
+    };
+
+    if (typeof email === 'string' && email.trim()) payload.email = email.trim();
+    if (typeof name === 'string' && name.trim()) payload.name = name.trim();
+    if (typeof phone === 'string' && phone.trim()) payload.phone = phone.trim();
+    if (typeof whatsapp === 'string' && whatsapp.trim()) payload.whatsapp = whatsapp.trim();
+    if (typeof about === 'string' && about.trim()) payload.acercaDe = about.trim();
+
+    const created = await parseRequest('/users', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const resolvedRoleName = typeof roleName === 'string' && roleName.trim() ? roleName.trim() : 'customer';
+    try {
+      const role = await fetchRoleByName(resolvedRoleName);
+      if (role) {
+        await addUserToRole(created.objectId, role.objectId);
+      }
+    } catch (roleError) {
+      console.warn('No se pudo asignar el rol al usuario', roleError);
+    }
+
+    const user = await fetchUserById(created.objectId);
+    res.status(201).json(user);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.put('/api/customers/:id', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const updates = {};
+
+    const assignField = (field, value, targetField = field) => {
+      if (value === undefined) return;
+      const trimmed = typeof value === 'string' ? value.trim() : '';
+      updates[targetField] = trimmed ? trimmed : null;
+    };
+
+    assignField('email', req.body?.email);
+    assignField('name', req.body?.name);
+    assignField('phone', req.body?.phone);
+    assignField('whatsapp', req.body?.whatsapp);
+    assignField('about', req.body?.about, 'acercaDe');
+
+    if (typeof req.body?.password === 'string') {
+      const trimmed = req.body.password.trim();
+      if (trimmed) {
+        updates.password = trimmed;
+      }
+    }
+
+    if (Object.keys(updates).length) {
+      await parseRequest(`/users/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updates),
+      });
+    }
+
+    const user = await fetchUserById(id);
+    res.json(user);
+  } catch (error) {
+    next(error);
+  }
+});
 
 app.get('/api/photos', async (req, res, next) => {
   try {
