@@ -13,8 +13,8 @@ const ProfilePersonalData: React.FC = () => {
   return (
     <div className="vstack gap-4 font-monospace">
       <header>
-        <h1 className="h4 mb-1">Datos personales</h1>
-        <p className="text-secondary mb-0">Administra la información visible en tu portfolio.</p>
+        <h1 className="h4 mb-1">Datos del sitio</h1>
+        <p className="text-secondary mb-0">Administra la información visible en tu sitio.</p>
       </header>
 
       <PersonalDataForm />

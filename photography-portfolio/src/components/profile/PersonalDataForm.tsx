@@ -8,12 +8,19 @@ type PersonalDataFormState = {
   name: string;
   email: string;
   phone: string;
+  about: string;
 };
 
 const emptyForm: PersonalDataFormState = {
   name: '',
   email: '',
   phone: '',
+  about: '',
+};
+
+const buildWhatsappLink = (phone: string) => {
+  const digits = phone.replace(/\D+/g, '');
+  return digits ? `https://wa.me/${digits}` : '';
 };
 
 const PersonalDataForm: React.FC = () => {
@@ -28,12 +35,14 @@ const PersonalDataForm: React.FC = () => {
       setForm(emptyForm);
       return;
     }
+    const inferredPhone = site.phone ?? site.whatsapp ?? '';
     setForm({
       name: site.name ?? '',
       email: site.email ?? '',
-      phone: site.phone ?? '',
+      phone: inferredPhone,
+      about: site.about ?? '',
     });
-  }, [site?.id, site?.name, site?.email, site?.phone]);
+  }, [site?.id, site?.name, site?.email, site?.phone, site?.whatsapp, site?.about]);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = event.target;
@@ -48,10 +57,13 @@ const PersonalDataForm: React.FC = () => {
     try {
       setStatus('saving');
       setError(null);
+      const trimmedPhone = form.phone.trim();
       await updateSiteProfile({
         name: form.name.trim(),
         email: form.email.trim(),
-        phone: form.phone.trim(),
+        phone: trimmedPhone,
+        whatsapp: buildWhatsappLink(trimmedPhone),
+        about: form.about.trim(),
       });
       await refreshSite();
       setStatus('success');
@@ -71,7 +83,7 @@ const PersonalDataForm: React.FC = () => {
     <form className="card shadow-sm" onSubmit={handleSubmit}>
       <div className="card-body vstack gap-3">
         <div>
-          <h2 className="h6 mb-1">Datos personales</h2>
+          <h2 className="h6 mb-1">Datos de contacto y reseña</h2>
           <p className="text-secondary small mb-0">Actualiza la información que aparece en el sitio.</p>
         </div>
 
@@ -103,16 +115,42 @@ const PersonalDataForm: React.FC = () => {
           </div>
         </div>
 
+        <div className="row g-3">
+          <div className="col-12 col-md-6">
+            <label htmlFor="personal-phone" className="form-label">Teléfono</label>
+            <input
+              id="personal-phone"
+              name="phone"
+              className="form-control"
+              value={form.phone}
+              onChange={handleChange}
+              disabled={status === 'saving'}
+              autoComplete="tel"
+            />
+          </div>
+          <div className="col-12 col-md-6">
+            <label htmlFor="personal-whatsapp" className="form-label">WhatsApp</label>
+            <input
+              id="personal-whatsapp"
+              className="form-control"
+              value={buildWhatsappLink(form.phone)}
+              readOnly
+              placeholder="Completa un teléfono para generar el enlace"
+            />
+            <div className="form-text">Se genera automáticamente con el formato https://wa.me/&lt;tel&gt;.</div>
+          </div>
+        </div>
+
         <div>
-          <label htmlFor="personal-phone" className="form-label">Teléfono</label>
-          <input
-            id="personal-phone"
-            name="phone"
+          <label htmlFor="personal-about" className="form-label">Acerca de</label>
+          <textarea
+            id="personal-about"
+            name="about"
             className="form-control"
-            value={form.phone}
+            rows={10}
+            value={form.about}
             onChange={handleChange}
             disabled={status === 'saving'}
-            autoComplete="tel"
           />
         </div>
 

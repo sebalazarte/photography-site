@@ -85,16 +85,17 @@ const AppHeader: React.FC = () => {
                     )}
                     <li>
                       <NavLink to="/profile/details" className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-                        Datos personales
+                        Datos del sitio
                       </NavLink>
+                    </li>
+                    
+                    <li>
+                      <hr className="dropdown-divider" />
                     </li>
                     <li>
                       <NavLink to="/profile/password" className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
                         Cambiar contraseña
                       </NavLink>
-                    </li>
-                    <li>
-                      <hr className="dropdown-divider" />
                     </li>
                     <li>
                       <button className="dropdown-item text-danger" onClick={() => { void logout(); }}>
