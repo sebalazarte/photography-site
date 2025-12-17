@@ -16,6 +16,7 @@ src/Galleries/*
 .env
 .env.local
 .env.*
+.env.example keep
 
 # Python
 __pycache__/
