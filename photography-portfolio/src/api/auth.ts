@@ -13,9 +13,7 @@ type ParseUser = {
   email?: string;
   name?: string;
   phone?: string;
-  whatsapp?: string;
   sessionToken?: string;
-  acercaDe?: string;
 };
 
 type ParseRole = {
@@ -29,8 +27,6 @@ export type AuthenticatedUser = {
   email?: string;
   name?: string;
   phone?: string;
-  whatsapp?: string;
-  about?: string;
   roles?: string[];
 };
 
@@ -45,8 +41,6 @@ const mapParseUser = (user: ParseUser): AuthenticatedUser => ({
   email: user.email,
   name: user.name,
   phone: user.phone,
-  whatsapp: user.whatsapp,
-  about: user.acercaDe,
 });
 
 const fetchUserRoles = async (userId: string): Promise<string[]> => {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useContactProfile } from '../../context/ContactProfileContext';
@@ -8,14 +8,12 @@ type PersonalDataFormState = {
   name: string;
   email: string;
   phone: string;
-  about: string;
 };
 
 const emptyForm: PersonalDataFormState = {
   name: '',
   email: '',
   phone: '',
-  about: '',
 };
 
 const PersonalDataForm: React.FC = () => {
@@ -34,12 +32,8 @@ const PersonalDataForm: React.FC = () => {
       name: profile.name ?? '',
       email: profile.email ?? '',
       phone: profile.phone ?? '',
-      about: profile.about ?? '',
     });
-  }, [profile?.id, profile?.name, profile?.email, profile?.phone, profile?.about]);
-
-  const phoneDigits = useMemo(() => form.phone.replace(/\D+/g, ''), [form.phone]);
-  const whatsappLink = phoneDigits ? `https://wa.me/${phoneDigits}` : '';
+  }, [profile?.id, profile?.name, profile?.email, profile?.phone]);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = event.target;
@@ -58,8 +52,6 @@ const PersonalDataForm: React.FC = () => {
         name: form.name.trim(),
         email: form.email.trim(),
         phone: form.phone.trim(),
-        whatsapp: whatsappLink,
-        about: form.about.trim(),
       });
       await refreshContact();
       setStatus('success');
@@ -111,41 +103,16 @@ const PersonalDataForm: React.FC = () => {
           </div>
         </div>
 
-        <div className="row g-3">
-          <div className="col-12 col-md-6">
-            <label htmlFor="personal-phone" className="form-label">Teléfono</label>
-            <input
-              id="personal-phone"
-              name="phone"
-              className="form-control"
-              value={form.phone}
-              onChange={handleChange}
-              disabled={status === 'saving'}
-              autoComplete="tel"
-            />
-          </div>
-          <div className="col-12 col-md-6">
-            <label htmlFor="personal-whatsapp" className="form-label">Enlace de WhatsApp</label>
-            <input
-              id="personal-whatsapp"
-              className="form-control"
-              value={whatsappLink}
-              readOnly
-            />
-            <div className="form-text">Se genera automáticamente a partir del número de teléfono.</div>
-          </div>
-        </div>
-
         <div>
-          <label htmlFor="personal-about" className="form-label">Acerca de</label>
-          <textarea
-            id="personal-about"
-            name="about"
+          <label htmlFor="personal-phone" className="form-label">Teléfono</label>
+          <input
+            id="personal-phone"
+            name="phone"
             className="form-control"
-            rows={6}
-            value={form.about}
+            value={form.phone}
             onChange={handleChange}
             disabled={status === 'saving'}
+            autoComplete="tel"
           />
         </div>
 

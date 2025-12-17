@@ -8,8 +8,6 @@ export type User = {
   email?: string;
   name?: string;
   phone?: string;
-  whatsapp?: string;
-  about?: string;
   roles?: string[];
 };
 
@@ -45,8 +43,6 @@ const toSnapshot = (auth: LoginResult): AuthSnapshot => ({
     email: auth.user.email,
     name: auth.user.name,
     phone: auth.user.phone,
-    whatsapp: auth.user.whatsapp,
-    about: auth.user.about,
     roles: auth.user.roles ?? [],
   },
   sessionToken: auth.sessionToken,
@@ -99,8 +95,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 email: current.email,
                 name: current.name,
                 phone: current.phone,
-                whatsapp: current.whatsapp,
-                about: current.about,
                 roles: current.roles ?? [],
               },
               sessionToken: snapshot.sessionToken,
@@ -144,8 +138,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: current.email,
           name: current.name,
           phone: current.phone,
-          whatsapp: current.whatsapp,
-          about: current.about,
           roles: current.roles ?? [],
         },
         sessionToken,
