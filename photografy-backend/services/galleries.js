@@ -1,6 +1,16 @@
 import { parseRequest, encodeWhere } from '../lib/parseClient.js';
 import { deleteFolderPhotoOrders } from './photos.js';
 
+const SITE_ID = (process.env.SITE_ID || process.env.VITE_SITE || '').trim();
+
+const withSiteFilter = (query = {}) => (
+  SITE_ID
+    ? { ...query, siteId: SITE_ID }
+    : { ...query }
+);
+
+const buildWhere = (query = {}) => encodeWhere(withSiteFilter(query));
+
 const slugify = (str) =>
   str
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -11,21 +21,23 @@ const slugify = (str) =>
 const galleryFolderKey = (slug) => `galleries/${slug}`;
 
 const listGalleries = async () => {
-  const data = await parseRequest('/classes/Gallery?order=slug');
+  const where = buildWhere({});
+  const data = await parseRequest(`/classes/Gallery?where=${where}&order=slug`);
   return Array.isArray(data?.results)
     ? data.results.map(({ name, slug }) => ({ name, slug }))
     : [];
 };
 
 const findGalleryBySlug = async (slug) => {
-  const where = encodeWhere({ slug });
+  const where = buildWhere({ slug });
   const data = await parseRequest(`/classes/Gallery?where=${where}&limit=1`);
   return Array.isArray(data?.results) ? data.results[0] ?? null : null;
 };
 
 const ensureUniqueSlug = async (name) => {
   const base = slugify(name);
-  const data = await parseRequest('/classes/Gallery?limit=1000');
+  const where = buildWhere({});
+  const data = await parseRequest(`/classes/Gallery?where=${where}&limit=1000`);
   const existing = new Set((data?.results ?? []).map((gallery) => gallery.slug));
   if (!existing.has(base)) {
     return base;
@@ -50,7 +62,11 @@ const createGallery = async (name) => {
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ name: finalName, slug }),
+    body: JSON.stringify({
+      name: finalName,
+      slug,
+      ...(SITE_ID ? { siteId: SITE_ID } : {}),
+    }),
   });
   return listGalleries();
 };

@@ -1,4 +1,4 @@
-import { galleryFolderKey } from '../constants';
+import { applySiteFilter, galleryFolderKey, SITE_ID } from '../constants';
 import { getParseContentOwner, parseRequest, runParseBatch } from './client';
 
 const GALLERIES_PATH = '/classes/Gallery';
@@ -43,22 +43,14 @@ const slugify = (value: string) =>
     .toLowerCase()
     || `galeria-${Date.now()}`;
 
-const findGalleryBySlug = async (slug: string, ownerId?: string): Promise<ParseGallery | null> => {
-  const resolvedOwnerId = resolveOwnerId(ownerId);
-  if (!resolvedOwnerId) return null;
-  const where = encodeURIComponent(JSON.stringify({
-    slug,
-    user: buildUserPointer(resolvedOwnerId),
-  }));
+const findGalleryBySlug = async (slug: string): Promise<ParseGallery | null> => {
+  const where = encodeURIComponent(JSON.stringify(applySiteFilter({ slug })));
   const data = await parseRequest<ParseCollection<ParseGallery>>(`${GALLERIES_PATH}?where=${where}&limit=1`);
   return data.results[0] ?? null;
 };
 
-const deleteFolderPhotoOrders = async (folderKey: string, ownerId: string) => {
-  const where = encodeURIComponent(JSON.stringify({
-    folderKey,
-    user: buildUserPointer(ownerId),
-  }));
+const deleteFolderPhotoOrders = async (folderKey: string) => {
+  const where = encodeURIComponent(JSON.stringify(applySiteFilter({ folderKey })));
   const data = await parseRequest<ParseCollection<{ objectId: string }>>(`${PHOTO_ORDER_PATH}?where=${where}&limit=1000`);
   const ids = data.results.map(item => item.objectId);
   if (!ids.length) return;
@@ -68,9 +60,9 @@ const deleteFolderPhotoOrders = async (folderKey: string, ownerId: string) => {
   })));
 };
 
-const ensureUniqueSlug = async (name: string, ownerId: string) => {
+const ensureUniqueSlug = async (name: string) => {
   const base = slugify(name);
-  const data = await fetchGalleries(ownerId);
+  const data = await fetchGalleries();
   const taken = new Set(data.map(gallery => gallery.slug));
   if (!taken.has(base)) {
     return base;
@@ -90,10 +82,8 @@ export interface GalleryDTO {
   slug: string;
 }
 
-export const fetchGalleries = async (ownerId?: string): Promise<GalleryDTO[]> => {
-  const resolvedOwnerId = resolveOwnerId(ownerId);
-  if (!resolvedOwnerId) return [];
-  const where = encodeURIComponent(JSON.stringify({ user: buildUserPointer(resolvedOwnerId) }));
+export const fetchGalleries = async (_ownerId?: string): Promise<GalleryDTO[]> => {
+  const where = encodeURIComponent(JSON.stringify(applySiteFilter({})));
   const data = await parseRequest<ParseCollection<ParseGallery>>(`${GALLERIES_PATH}?where=${where}&order=slug`);
   return data.results.map(({ name, slug }) => ({ name, slug }));
 };
@@ -105,7 +95,7 @@ export const createGallery = async (name: string) => {
   }
 
   const ownerId = requireOwnerId();
-  const slug = await ensureUniqueSlug(trimmed, ownerId);
+  const slug = await ensureUniqueSlug(trimmed);
   await parseRequest(GALLERIES_PATH, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -113,6 +103,7 @@ export const createGallery = async (name: string) => {
       name: trimmed,
       slug,
       user: buildUserPointer(ownerId),
+      ...(SITE_ID ? { siteId: SITE_ID } : {}),
     }),
   });
 
@@ -121,12 +112,12 @@ export const createGallery = async (name: string) => {
 
 export const deleteGallery = async (slug: string) => {
   const ownerId = requireOwnerId();
-  const gallery = await findGalleryBySlug(slug, ownerId);
+  const gallery = await findGalleryBySlug(slug);
   if (!gallery) {
     throw new Error('Galería no encontrada');
   }
 
-  await deleteFolderPhotoOrders(galleryFolderKey(slug), ownerId);
+  await deleteFolderPhotoOrders(galleryFolderKey(slug));
   await parseRequest(`${GALLERIES_PATH}/${gallery.objectId}`, {
     method: 'DELETE',
   });
@@ -141,7 +132,7 @@ export const updateGalleryName = async (slug: string, name: string) => {
   }
 
   const ownerId = requireOwnerId();
-  const gallery = await findGalleryBySlug(slug, ownerId);
+  const gallery = await findGalleryBySlug(slug);
   if (!gallery) {
     throw new Error('Galería no encontrada');
   }

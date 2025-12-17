@@ -1,5 +1,15 @@
 import { parseRequest, uploadParseFile, encodeWhere, runBatch } from '../lib/parseClient.js';
 
+const SITE_ID = (process.env.SITE_ID || process.env.VITE_SITE || '').trim();
+
+const withSiteFilter = (query = {}) => (
+  SITE_ID
+    ? { ...query, siteId: SITE_ID }
+    : { ...query }
+);
+
+const buildWhere = (query = {}) => encodeWhere(withSiteFilter(query));
+
 const mapPhoto = (entry, index) => ({
   id: entry.objectId,
   filename: entry.photoId ?? entry.photoFile?.name ?? entry.objectId,
@@ -29,7 +39,7 @@ const sortPhotoEntries = (entries) => {
 };
 
 const listPhotos = async (folderKey) => {
-  const where = encodeWhere({ folderKey });
+  const where = buildWhere({ folderKey });
   const data = await parseRequest(`/classes/PhotoOrder?where=${where}&order=position,createdAt&limit=1000`);
   const entries = Array.isArray(data?.results) ? data.results : [];
 
@@ -73,7 +83,10 @@ const uploadPhotos = async (folderKey, files) => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        ...body,
+        ...(SITE_ID ? { siteId: SITE_ID } : {}),
+      }),
     });
   }
 
@@ -102,7 +115,7 @@ const updatePhotoOrder = async (folderKey, order) => {
 };
 
 const deleteFolderPhotoOrders = async (folderKey) => {
-  const where = encodeWhere({ folderKey });
+  const where = buildWhere({ folderKey });
   const data = await parseRequest(`/classes/PhotoOrder?where=${where}&limit=1000`);
   const entries = Array.isArray(data?.results) ? data.results : [];
   if (!entries.length) return;

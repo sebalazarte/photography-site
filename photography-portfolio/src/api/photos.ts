@@ -1,4 +1,5 @@
 import { absolutizeFromApi, getParseContentOwner, parseRequest, runParseBatch, uploadParseFile } from './client';
+import { applySiteFilter, SITE_ID } from '../constants';
 import type { StoredPhoto } from '../types/photos';
 
 const PHOTO_ORDER_PATH = '/classes/PhotoOrder';
@@ -55,13 +56,8 @@ const mapToStoredPhoto = (entry: ParsePhotoOrder, index: number): StoredPhoto =>
   order: index,
 });
 
-const fetchPhotoOrders = async (folder: string, ownerId?: string) => {
-  const resolvedOwnerId = resolveOwnerId(ownerId);
-  if (!resolvedOwnerId) return [];
-  const where = encodeURIComponent(JSON.stringify({
-    folderKey: folder,
-    user: buildUserPointer(resolvedOwnerId),
-  }));
+const fetchPhotoOrders = async (folder: string) => {
+  const where = encodeURIComponent(JSON.stringify(applySiteFilter({ folderKey: folder })));
   const data = await parseRequest<ParseCollection<ParsePhotoOrder>>(`${PHOTO_ORDER_PATH}?where=${where}&order=position,createdAt&limit=1000`);
   const sorted = [...data.results].sort((a, b) => {
     const posA = Number.isFinite(a.position) ? (a.position as number) : Number.MAX_SAFE_INTEGER;
@@ -96,7 +92,7 @@ export const uploadToFolder = async (folder: string, files: FileList | File[]) =
   }
 
   const ownerId = requireOwnerId();
-  const existing = await fetchPhotoOrders(folder, ownerId);
+  const existing = await fetchPhotoOrders(folder);
   let nextPosition = existing.length;
 
   for (const file of iterable) {
@@ -112,6 +108,7 @@ export const uploadToFolder = async (folder: string, files: FileList | File[]) =
         name: uploaded.name,
       },
       user: buildUserPointer(ownerId),
+      ...(SITE_ID ? { siteId: SITE_ID } : {}),
     };
     nextPosition += 1;
     await parseRequest(PHOTO_ORDER_PATH, {
@@ -121,19 +118,19 @@ export const uploadToFolder = async (folder: string, files: FileList | File[]) =
     });
   }
 
-  return fetchPhotoOrders(folder, ownerId);
+  return fetchPhotoOrders(folder);
 };
 
 export const deletePhotoFromFolder = async (folder: string, photoId: string) => {
-  const ownerId = requireOwnerId();
+  requireOwnerId();
   await parseRequest(`${PHOTO_ORDER_PATH}/${photoId}`, {
     method: 'DELETE',
   });
-  return fetchPhotoOrders(folder, ownerId);
+  return fetchPhotoOrders(folder);
 };
 
 export const updatePhotoOrder = async (folder: string, order: string[]) => {
-  const ownerId = requireOwnerId();
+  requireOwnerId();
   for (let index = 0; index < order.length; index += 1) {
     const objectId = order[index];
     await parseRequest(`/classes/PhotoOrder/${objectId}`, {
@@ -144,5 +141,5 @@ export const updatePhotoOrder = async (folder: string, order: string[]) => {
       body: JSON.stringify({ position: index }),
     });
   }
-  return fetchPhotoOrders(folder, ownerId);
+  return fetchPhotoOrders(folder);
 };
