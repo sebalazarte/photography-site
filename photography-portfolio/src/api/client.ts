@@ -5,6 +5,18 @@ const PARSE_JS_KEY = import.meta.env.VITE_PARSE_JS_KEY ?? '';
 let parseSessionToken = import.meta.env.VITE_PARSE_SESSION_TOKEN ?? '';
 let parseContentOwnerId = '';
 
+const PARSE_MAX_ATTEMPTS = 3;
+const RETRYABLE_PARSE_SNIPPETS = ['invalid server state: starting'];
+
+const delay = (ms: number) => new Promise(resolve => {
+  setTimeout(resolve, ms);
+});
+
+const isRetryableParseMessage = (message: string) => {
+  const normalized = message.toLowerCase();
+  return RETRYABLE_PARSE_SNIPPETS.some(snippet => normalized.includes(snippet));
+};
+
 export const setParseSessionToken = (token: string | null | undefined) => {
   parseSessionToken = token ?? '';
 };
@@ -40,29 +52,51 @@ export interface ParseRequestOptions extends Omit<RequestInit, 'body'> {
 }
 
 export const parseRequest = async <T>(path: string, options: ParseRequestOptions = {}): Promise<T> => {
-  const headers = withParseHeaders(options.headers);
-  const response = await fetch(`${PARSE_BASE_URL}${path}`, {
-    ...options,
-    headers,
-  });
+  const baseBody = options.body;
 
-  const raw = await response.text();
-  if (!response.ok) {
-    let message = raw || 'Error en la solicitud';
+  for (let attempt = 0; attempt < PARSE_MAX_ATTEMPTS; attempt += 1) {
+    const headers = withParseHeaders(options.headers);
     try {
-      const payload = raw ? JSON.parse(raw) : null;
-      message = payload?.error || payload?.message || message;
-    } catch {
-      // ignore JSON parse errors and fall back to raw message
+      const response = await fetch(`${PARSE_BASE_URL}${path}`, {
+        ...options,
+        headers,
+        body: baseBody,
+      });
+
+      const raw = await response.text();
+      if (!response.ok) {
+        let message = raw || 'Error en la solicitud';
+        try {
+          const payload = raw ? JSON.parse(raw) : null;
+          message = payload?.error || payload?.message || message;
+        } catch {
+          // ignore JSON parse errors and fall back to raw message
+        }
+
+        if (isRetryableParseMessage(message) && attempt < PARSE_MAX_ATTEMPTS - 1) {
+          await delay(500 * (attempt + 1));
+          continue;
+        }
+
+        throw new Error(message);
+      }
+
+      if (!raw) {
+        return undefined as T;
+      }
+
+      return JSON.parse(raw) as T;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Error en la solicitud';
+      if (isRetryableParseMessage(message) && attempt < PARSE_MAX_ATTEMPTS - 1) {
+        await delay(500 * (attempt + 1));
+        continue;
+      }
+      throw error instanceof Error ? error : new Error(message);
     }
-    throw new Error(message);
   }
 
-  if (!raw) {
-    return undefined as T;
-  }
-
-  return JSON.parse(raw) as T;
+  throw new Error('Error en la solicitud');
 };
 
 export interface ParseFileUploadResult {
