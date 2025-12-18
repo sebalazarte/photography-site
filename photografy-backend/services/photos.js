@@ -51,6 +51,23 @@ const extractEntryGroup = (entry = {}) => {
   return null;
 };
 
+const resolveGroupInput = (value) => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      throw new Error('grupo requerido');
+    }
+    const parsed = Number(trimmed);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  throw new Error('grupo inválido');
+};
+
 const compareGroups = (left, right) => {
   const groupA = extractEntryGroup(left);
   const groupB = extractEntryGroup(right);
@@ -242,6 +259,22 @@ const clearFolderPhotos = async (folderKey) => {
   return listPhotos(folderKey);
 };
 
+const assignPhotoGroup = async (folderKey, photoIds = [], groupValue) => {
+  const uniqueIds = Array.from(new Set(Array.isArray(photoIds) ? photoIds : [])).filter((id) => typeof id === 'string' && id.trim());
+  if (!uniqueIds.length) {
+    return listPhotos(folderKey);
+  }
+  const finalGroup = resolveGroupInput(groupValue);
+  const payload = { group: finalGroup, grupo: finalGroup };
+  const requests = uniqueIds.map((photoId) => ({
+    method: 'PUT',
+    path: `/classes/PhotoOrder/${photoId}`,
+    body: payload,
+  }));
+  await runBatch(requests);
+  return listPhotos(folderKey);
+};
+
 export {
   mapPhoto,
   listPhotos,
@@ -251,4 +284,5 @@ export {
   swapPhotoPositions,
   clearFolderPhotos,
   deleteFolderPhotoOrders,
+  assignPhotoGroup,
 };

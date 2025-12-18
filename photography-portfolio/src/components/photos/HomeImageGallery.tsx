@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import type { StoredPhoto } from '../../types/photos';
 import './ImageGallery.css';
 import LightboxModal from './LightboxModal';
-import { clearFolderPhotos, deletePhotoFromFolder, updatePhotoOrder } from '../../api/photos';
+import { assignGroupToPhotos, clearFolderPhotos, deletePhotoFromFolder, updatePhotoOrder } from '../../api/photos';
 import { useAuth } from '../../context/AuthContext';
 import { HOME_FOLDER } from '../../constants';
 
@@ -46,6 +46,23 @@ const TargetIcon = () => (
   </svg>
 );
 
+const AssignIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="8" />
+    <path d="M9 12.5l2 2 4-4.5" />
+  </svg>
+);
+
 type GroupKey = number | string | null;
 
 const normalizeGroup = (group?: StoredPhoto['group'] | string | null): GroupKey => {
@@ -75,6 +92,70 @@ const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = f
   const [sourceGroup, setSourceGroup] = useState<GroupKey>(null);
   const [savingOrder, setSavingOrder] = useState(false);
   const [clearingAll, setClearingAll] = useState(false);
+  const [assignGroupMode, setAssignGroupMode] = useState(false);
+  const [assignGroupValue, setAssignGroupValue] = useState('');
+  const [assignSelection, setAssignSelection] = useState<Set<string>>(new Set());
+  const [assigningGroup, setAssigningGroup] = useState(false);
+
+  const resetOrderingSelection = () => {
+    setSourcePhotoId(null);
+    setSourceGroup(null);
+  };
+
+  const resetAssignState = () => {
+    setAssignSelection(new Set());
+    setAssignGroupValue('');
+  };
+
+  const handleToggleAssignMode = () => {
+    setAssignGroupMode(current => {
+      const next = !current;
+      if (next) {
+        setOrderingMode(false);
+        resetOrderingSelection();
+      } else {
+        resetAssignState();
+      }
+      return next;
+    });
+  };
+
+  const handleAssignSelectionToggle = (photoId: string) => {
+    if (!assignGroupMode || assigningGroup) return;
+    setAssignSelection(previous => {
+      const next = new Set(previous);
+      if (next.has(photoId)) {
+        next.delete(photoId);
+      } else {
+        next.add(photoId);
+      }
+      return next;
+    });
+  };
+
+  const handleAssignGroupSubmit = async (event?: FormEvent) => {
+    event?.preventDefault();
+    const trimmedValue = assignGroupValue.trim();
+    if (!assignGroupMode || !assignSelection.size || !trimmedValue || assigningGroup) {
+      return;
+    }
+    const selection = Array.from(assignSelection);
+    try {
+      setAssigningGroup(true);
+      const updated = await assignGroupToPhotos(HOME_FOLDER, selection, trimmedValue);
+      onPhotosChange?.(updated);
+      setNotice({ type: 'success', message: `Grupo ${trimmedValue} asignado.` });
+      resetAssignState();
+      setAssignGroupMode(false);
+    } catch (error) {
+      setNotice({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'No se pudo asignar el grupo',
+      });
+    } finally {
+      setAssigningGroup(false);
+    }
+  };
 
   useEffect(() => {
     if (!notice) return;
@@ -95,6 +176,15 @@ const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = f
       setSourceGroup(normalized);
     }
   }, [galleryItems, sourcePhotoId, sourceGroup]);
+
+  useEffect(() => {
+    if (!assignGroupMode || !assignSelection.size) return;
+    const existing = new Set(galleryItems.map(photo => photo.id));
+    const filtered = Array.from(assignSelection).filter(id => existing.has(id));
+    if (filtered.length !== assignSelection.size) {
+      setAssignSelection(new Set(filtered));
+    }
+  }, [assignGroupMode, assignSelection, galleryItems]);
 
   const handleDeletePhoto = async (photo: StoredPhoto) => {
     if (!canManage || deletingId === photo.id || clearingAll) return;
@@ -164,8 +254,7 @@ const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = f
       });
     } finally {
       setSavingOrder(false);
-      setSourcePhotoId(null);
-      setSourceGroup(null);
+      resetOrderingSelection();
     }
   };
 
@@ -181,8 +270,9 @@ const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = f
       const updated = await clearFolderPhotos(HOME_FOLDER);
       onPhotosChange?.(updated);
       setOrderingMode(false);
-      setSourcePhotoId(null);
-      setSourceGroup(null);
+      resetOrderingSelection();
+      setAssignGroupMode(false);
+      resetAssignState();
       setNotice({ type: 'success', message: 'Galería de inicio vaciada.' });
     } catch (error) {
       setNotice({
@@ -211,39 +301,108 @@ const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = f
               {sourcePhotoId ? 'Selecciona la foto destino.' : 'Selecciona la foto origen.'}
             </span>
           )}
-          <div className="ms-auto d-flex gap-2">
+          {assignGroupMode && (
+            <span className="text-secondary small">
+              {assignSelection.size
+                ? `${assignSelection.size} seleccionada${assignSelection.size > 1 ? 's' : ''}. Escribe el grupo y confirma.`
+                : 'Selecciona las fotos para asignarles un grupo.'}
+            </span>
+          )}
+          <div className="ms-auto d-flex flex-wrap gap-2">
             <button
               type="button"
               className="btn btn-sm btn-outline-danger"
               onClick={handleClearHome}
-              disabled={savingOrder || clearingAll}
+              disabled={savingOrder || clearingAll || assigningGroup}
             >
               {clearingAll ? 'Limpiando…' : 'Limpiar'}
             </button>
             <button
               type="button"
-              className={`btn btn-sm ${orderingMode ? 'btn-outline-primary' : 'btn-primary'}`}
+              className={`btn btn-sm ${assignGroupMode ? 'btn-warning' : 'btn-outline-warning'}`}
+              onClick={handleToggleAssignMode}
+              disabled={clearingAll || savingOrder || assigningGroup}
+            >
+              <span className="d-inline-flex align-items-center gap-1">
+                <AssignIcon />
+                {assignGroupMode ? 'Salir de asignar' : 'Asignar grupo'}
+              </span>
+            </button>
+            <button
+              type="button"
+              className={`btn btn-sm ${orderingMode ? 'btn-primary' : 'btn-outline-primary'}`}
               onClick={() => {
                 setOrderingMode(current => {
                   const next = !current;
-                  if (!next) {
-                    setSourcePhotoId(null);
-                    setSourceGroup(null);
+                  if (next) {
+                    setAssignGroupMode(false);
+                    resetAssignState();
+                  } else {
+                    resetOrderingSelection();
                   }
                   return next;
                 });
               }}
-              disabled={savingOrder || clearingAll}
+              disabled={savingOrder || clearingAll || assigningGroup}
             >
               {orderingMode ? 'Salir de ordenar' : 'Ordenar'}
             </button>
           </div>
+          {assignGroupMode && (
+            <form className="w-100 d-flex flex-wrap align-items-center gap-2 mt-2" onSubmit={handleAssignGroupSubmit}>
+              <div className="input-group input-group-sm w-auto">
+                <span className="input-group-text" id="assign-group-label">Grupo</span>
+                <input
+                  id="assign-group-input"
+                  type="number"
+                  inputMode="numeric"
+                  className="form-control"
+                  aria-describedby="assign-group-label assign-group-help"
+                  value={assignGroupValue}
+                  onChange={(event) => setAssignGroupValue(event.target.value)}
+                  placeholder="Ej. 1"
+                  disabled={assigningGroup}
+                  min={0}
+                />
+              </div>
+              <span className="text-secondary small" id="assign-group-help">
+                {assignSelection.size
+                  ? `${assignSelection.size} seleccionada${assignSelection.size > 1 ? 's' : ''}`
+                  : 'Toca las fotos para seleccionarlas'}
+              </span>
+              <div className="d-flex gap-2">
+                <button
+                  type="submit"
+                  className="btn btn-sm btn-primary"
+                  disabled={assigningGroup || !assignGroupValue.trim() || !assignSelection.size}
+                >
+                  {assigningGroup ? 'Guardando…' : 'Aplicar'}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-secondary"
+                  onClick={handleToggleAssignMode}
+                  disabled={assigningGroup}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          )}
           {savingOrder && (
             <div className="w-100">
               <div className="progress" aria-hidden="true">
                 <div className="progress-bar progress-bar-striped progress-bar-animated" style={{ width: '100%' }}></div>
               </div>
               <span className="text-info small d-block mt-1">Guardando nuevo orden…</span>
+            </div>
+          )}
+          {assigningGroup && (
+            <div className="w-100">
+              <div className="progress" aria-hidden="true">
+                <div className="progress-bar progress-bar-striped progress-bar-animated" style={{ width: '100%' }}></div>
+              </div>
+              <span className="text-info small d-block mt-1">Asignando grupo…</span>
             </div>
           )}
         </div>
@@ -261,9 +420,11 @@ const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = f
             ? 'Origen seleccionado'
             : 'Seleccionar como destino';
           const shouldShowTargetButton = Boolean(sourcePhotoId && (matchesSourceGroup || isSourcePhoto));
+          const isAssignSelected = assignSelection.has(photo.id);
+          const assignButtonTitle = isAssignSelected ? 'Quitar de la selección' : 'Seleccionar para asignar grupo';
           return (
             <figure key={photo.id} className="masonry-item">
-              {canManage && orderingMode && (
+              {canManage && (orderingMode || assignGroupMode) && (
                 <span className="masonry-item__position" aria-label="Grupo y posición actual">
                   <span className="masonry-item__position-label">{groupLabel}</span>
                   <span className="masonry-item__position-meta">P: {displayPosition}</span>
@@ -281,7 +442,7 @@ const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = f
                 decoding="async"
               />
             </button>
-            {canManage && (
+            {canManage && !assignGroupMode && (
               <button
                 type="button"
                 className="masonry-item__delete"
@@ -345,6 +506,24 @@ const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = f
               >
                 <span className="masonry-item__select-icon" aria-hidden="true">
                   {isSourcePhoto ? <OriginIcon /> : <TargetIcon />}
+                </span>
+              </button>
+            )}
+            {canManage && assignGroupMode && (
+              <button
+                type="button"
+                className={`masonry-item__select masonry-item__select--assign ${isAssignSelected ? 'is-selected' : ''}`}
+                aria-label={assignButtonTitle}
+                title={assignButtonTitle}
+                disabled={assigningGroup}
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  handleAssignSelectionToggle(photo.id);
+                }}
+              >
+                <span className="masonry-item__select-icon" aria-hidden="true">
+                  <AssignIcon />
                 </span>
               </button>
             )}

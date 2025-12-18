@@ -99,6 +99,23 @@ const extractEntryGroup = (entry: ParsePhotoOrder): number | string | null => {
   return null;
 };
 
+const sanitizeGroupInput = (value: number | string): number => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      throw new Error('Grupo requerido');
+    }
+    const parsed = Number(trimmed);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  throw new Error('Grupo inválido');
+};
+
 const compareGroups = (left: ParsePhotoOrder, right: ParsePhotoOrder) => {
   const groupA = extractEntryGroup(left);
   const groupB = extractEntryGroup(right);
@@ -358,4 +375,39 @@ export const featurePhotoOnHome = async (photo: StoredPhoto) => {
   });
 
   return true;
+};
+
+export const assignGroupToPhotos = async (folder: string, photoIds: string[], groupValue: number | string) => {
+  const uniqueIds = Array.from(new Set(photoIds.filter((id): id is string => typeof id === 'string' && Boolean(id.trim()))));
+  if (!uniqueIds.length) {
+    return fetchPhotoOrders(folder);
+  }
+
+  const normalizedGroup = sanitizeGroupInput(groupValue);
+
+  if (HAS_BACKEND) {
+    try {
+      return await backendRequest<StoredPhoto[]>('/api/photos/group', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ folder, group: normalizedGroup, photos: uniqueIds }),
+      });
+    } catch (error) {
+      if (!isNetworkError(error)) {
+        throw error instanceof Error ? error : new Error('No se pudo asignar el grupo.');
+      }
+      console.warn('Fallo el backend al asignar grupos, usando Parse directamente', error);
+    }
+  }
+
+  const payload: Record<string, number | null> = { group: normalizedGroup, grupo: normalizedGroup };
+  const requests = uniqueIds.map(photoId => ({
+    method: 'PUT' as const,
+    path: `${PHOTO_ORDER_PATH}/${photoId}`,
+    body: payload,
+  }));
+  await runParseBatch(requests);
+  return fetchPhotoOrders(folder);
 };

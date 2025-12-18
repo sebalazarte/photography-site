@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { clearFolderPhotos, deletePhoto, listPhotos, swapPhotoPositions, updatePhotoOrder, uploadPhotos } from '../services/photos.js';
+import { assignPhotoGroup, clearFolderPhotos, deletePhoto, listPhotos, swapPhotoPositions, updatePhotoOrder, uploadPhotos } from '../services/photos.js';
 
 const upload = multer({ storage: multer.memoryStorage() });
 const router = Router();
@@ -106,6 +106,23 @@ router.put('/order/swap', async (req, res, next) => {
 
     const photos = await swapPhotoPositions(folder, sourceId, targetId);
     res.json(photos);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/group', async (req, res, next) => {
+  try {
+    const folder = typeof req.body?.folder === 'string' ? req.body.folder : null;
+    const photos = Array.isArray(req.body?.photos) ? req.body.photos : [];
+    const groupValue = req.body?.group;
+
+    if (!folder || !photos.length || groupValue === undefined || groupValue === null) {
+      return res.status(400).json({ message: 'folder, group y photos requeridos' });
+    }
+
+    const updated = await assignPhotoGroup(folder, photos, groupValue);
+    res.json(updated);
   } catch (error) {
     next(error);
   }
