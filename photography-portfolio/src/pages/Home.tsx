@@ -1,4 +1,4 @@
-import ImageGallery from '../components/photos/ImageGallery';
+import HomeImageGallery from '../components/photos/HomeImageGallery';
 import { HOME_FOLDER } from '../constants';
 import { useFolderPhotos } from '../hooks/useFolderPhotos';
 
@@ -7,8 +7,7 @@ const Home = () => {
 
   return (
     <div className="home-page">
-      <ImageGallery folder={HOME_FOLDER} photos={photos} />
-      {loading && <p className="text-muted">Cargando galería...</p>}
+      <HomeImageGallery photos={photos} loading={loading} />
     </div>
   );
 };

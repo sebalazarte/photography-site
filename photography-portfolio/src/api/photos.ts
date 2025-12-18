@@ -143,6 +143,63 @@ export const deletePhotoFromFolder = async (folder: string, photoId: string) => 
   return fetchPhotoOrders(folder);
 };
 
+export const swapPhotoPositions = async (folder: string, sourceId: string, targetId: string) => {
+  if (sourceId === targetId) {
+    return fetchPhotoOrders(folder);
+  }
+
+  requireOwnerId();
+
+  if (HAS_BACKEND) {
+    try {
+      return await backendRequest<StoredPhoto[]>('/api/photos/order/swap', {
+        method: 'PUT',
+        body: JSON.stringify({ folder, sourceId, targetId }),
+      });
+    } catch (error) {
+      if (!isNetworkError(error)) {
+        throw error instanceof Error ? error : new Error('No se pudo intercambiar el orden.');
+      }
+      console.warn('Fallo el backend al intercambiar posiciones, usando Parse directamente', error);
+    }
+  }
+
+  const [source, target] = await Promise.all([
+    parseRequest<ParsePhotoOrder>(`${PHOTO_ORDER_PATH}/${sourceId}`),
+    parseRequest<ParsePhotoOrder>(`${PHOTO_ORDER_PATH}/${targetId}`),
+  ]);
+
+  if (!source || !target) {
+    throw new Error('No se encontraron las fotos para intercambiar.');
+  }
+
+  if (source.folderKey !== folder || target.folderKey !== folder) {
+    throw new Error('Las fotos no pertenecen al folder solicitado.');
+  }
+
+  const sourcePosition = Number.isFinite(source.position) ? (source.position as number) : null;
+  const targetPosition = Number.isFinite(target.position) ? (target.position as number) : null;
+
+  if (sourcePosition === null || targetPosition === null) {
+    throw new Error('No se pudo determinar la posición actual de las fotos.');
+  }
+
+  await runParseBatch([
+    {
+      method: 'PUT' as const,
+      path: `${PHOTO_ORDER_PATH}/${sourceId}`,
+      body: { position: targetPosition },
+    },
+    {
+      method: 'PUT' as const,
+      path: `${PHOTO_ORDER_PATH}/${targetId}`,
+      body: { position: sourcePosition },
+    },
+  ]);
+
+  return fetchPhotoOrders(folder);
+};
+
 export const updatePhotoOrder = async (folder: string, order: string[]) => {
   requireOwnerId();
   for (let index = 0; index < order.length; index += 1) {

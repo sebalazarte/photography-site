@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { deletePhoto, listPhotos, updatePhotoOrder, uploadPhotos } from '../services/photos.js';
+import { deletePhoto, listPhotos, swapPhotoPositions, updatePhotoOrder, uploadPhotos } from '../services/photos.js';
 
 const upload = multer({ storage: multer.memoryStorage() });
 const router = Router();
@@ -75,6 +75,22 @@ router.put('/order', async (req, res, next) => {
     }
 
     const photos = await updatePhotoOrder(folder, order);
+    res.json(photos);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/order/swap', async (req, res, next) => {
+  try {
+    const folder = typeof req.body?.folder === 'string' ? req.body.folder : null;
+    const sourceId = typeof req.body?.sourceId === 'string' ? req.body.sourceId : null;
+    const targetId = typeof req.body?.targetId === 'string' ? req.body.targetId : null;
+    if (!folder || !sourceId || !targetId) {
+      return res.status(400).json({ message: 'folder, sourceId y targetId requeridos' });
+    }
+
+    const photos = await swapPhotoPositions(folder, sourceId, targetId);
     res.json(photos);
   } catch (error) {
     next(error);

@@ -114,6 +114,47 @@ const updatePhotoOrder = async (folderKey, order) => {
   return listPhotos(folderKey);
 };
 
+const swapPhotoPositions = async (folderKey, sourceId, targetId) => {
+  if (sourceId === targetId) {
+    return listPhotos(folderKey);
+  }
+
+  const [source, target] = await Promise.all([
+    parseRequest(`/classes/PhotoOrder/${sourceId}`),
+    parseRequest(`/classes/PhotoOrder/${targetId}`),
+  ]);
+
+  if (!source || !target) {
+    throw new Error('No se encontraron las fotos para intercambiar.');
+  }
+
+  if (source.folderKey !== folderKey || target.folderKey !== folderKey) {
+    throw new Error('Las fotos no pertenecen al folder indicado.');
+  }
+
+  const sourcePosition = Number.isFinite(source.position) ? source.position : null;
+  const targetPosition = Number.isFinite(target.position) ? target.position : null;
+
+  if (sourcePosition === null || targetPosition === null) {
+    throw new Error('Las fotos no tienen posiciones válidas para intercambiar.');
+  }
+
+  await runBatch([
+    {
+      method: 'PUT',
+      path: `/classes/PhotoOrder/${sourceId}`,
+      body: { position: targetPosition },
+    },
+    {
+      method: 'PUT',
+      path: `/classes/PhotoOrder/${targetId}`,
+      body: { position: sourcePosition },
+    },
+  ]);
+
+  return listPhotos(folderKey);
+};
+
 const deleteFolderPhotoOrders = async (folderKey) => {
   const where = buildWhere({ folderKey });
   const data = await parseRequest(`/classes/PhotoOrder?where=${where}&limit=1000`);
@@ -132,5 +173,6 @@ export {
   uploadPhotos,
   deletePhoto,
   updatePhotoOrder,
+  swapPhotoPositions,
   deleteFolderPhotoOrders,
 };

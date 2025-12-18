@@ -72,6 +72,39 @@
   box-shadow: none;
 }
 
+.masonry-item__select {
+  position: absolute;
+  bottom: 0.65rem;
+  left: 0.65rem;
+  border: none;
+  border-radius: 999px;
+  padding: 0.3rem 0.9rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(13, 110, 253, 0.9);
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+  box-shadow: 0 6px 18px rgba(13, 110, 253, 0.35);
+}
+
+.masonry-item__select--target {
+  background: rgba(25, 135, 84, 0.9);
+  box-shadow: 0 6px 18px rgba(25, 135, 84, 0.35);
+}
+
+.masonry-item__select:hover,
+.masonry-item__select:focus-visible {
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.masonry-item__select:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .masonry-item__action {
   pointer-events: auto;
   width: 34px;
