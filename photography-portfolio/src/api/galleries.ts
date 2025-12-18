@@ -56,7 +56,7 @@ const deleteFolderPhotoOrders = async (folderKey: string) => {
   if (!ids.length) return;
   await runParseBatch(ids.map((objectId) => ({
     method: 'DELETE',
-    path: `/parse/classes/PhotoOrder/${objectId}`,
+    path: `${PHOTO_ORDER_PATH}/${objectId}`,
   })));
 };
 

@@ -75,7 +75,7 @@ const fetchPhotoOrders = async (folder: string) => {
   if (needsNormalization && sorted.length) {
     const requests = sorted.map((entry, index) => ({
       method: 'PUT' as const,
-      path: `/parse/classes/PhotoOrder/${entry.objectId}`,
+      path: `${PHOTO_ORDER_PATH}/${entry.objectId}`,
       body: { position: index },
     }));
     await runParseBatch(requests);
