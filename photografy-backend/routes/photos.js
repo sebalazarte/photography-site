@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { deletePhoto, listPhotos, swapPhotoPositions, updatePhotoOrder, uploadPhotos } from '../services/photos.js';
+import { clearFolderPhotos, deletePhoto, listPhotos, swapPhotoPositions, updatePhotoOrder, uploadPhotos } from '../services/photos.js';
 
 const upload = multer({ storage: multer.memoryStorage() });
 const router = Router();
@@ -61,6 +61,20 @@ router.delete('/', async (req, res, next) => {
       const photos = await listPhotos(folder);
       res.json(photos);
     }
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete('/all', async (req, res, next) => {
+  try {
+    const folder = typeof req.query.folder === 'string' ? req.query.folder : null;
+    if (!folder) {
+      return res.status(400).json({ message: 'folder requerido' });
+    }
+
+    const photos = await clearFolderPhotos(folder);
+    res.json(photos);
   } catch (error) {
     next(error);
   }

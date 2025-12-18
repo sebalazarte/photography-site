@@ -143,6 +143,35 @@ export const deletePhotoFromFolder = async (folder: string, photoId: string) => 
   return fetchPhotoOrders(folder);
 };
 
+export const clearFolderPhotos = async (folder: string) => {
+  requireOwnerId();
+  if (HAS_BACKEND) {
+    const params = new URLSearchParams({ folder });
+    try {
+      return await backendRequest<StoredPhoto[]>(`/api/photos/all?${params.toString()}`, {
+        method: 'DELETE',
+      });
+    } catch (error) {
+      if (!isNetworkError(error)) {
+        throw error instanceof Error ? error : new Error('No se pudo limpiar el folder.');
+      }
+      console.warn('Fallo el backend al limpiar el folder, usando Parse directamente', error);
+    }
+  }
+
+  const where = encodeURIComponent(JSON.stringify(applySiteFilter({ folderKey: folder })));
+  const data = await parseRequest<ParseCollection<ParsePhotoOrder>>(`${PHOTO_ORDER_PATH}?where=${where}&limit=1000`);
+  const ids = data.results.map(entry => entry.objectId);
+  if (ids.length) {
+    const requests = ids.map(objectId => ({
+      method: 'DELETE' as const,
+      path: `${PHOTO_ORDER_PATH}/${objectId}`,
+    }));
+    await runParseBatch(requests);
+  }
+  return fetchPhotoOrders(folder);
+};
+
 export const swapPhotoPositions = async (folder: string, sourceId: string, targetId: string) => {
   if (sourceId === targetId) {
     return fetchPhotoOrders(folder);

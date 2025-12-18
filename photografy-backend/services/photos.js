@@ -167,6 +167,11 @@ const deleteFolderPhotoOrders = async (folderKey) => {
   await runBatch(requests);
 };
 
+const clearFolderPhotos = async (folderKey) => {
+  await deleteFolderPhotoOrders(folderKey);
+  return listPhotos(folderKey);
+};
+
 export {
   mapPhoto,
   listPhotos,
@@ -174,5 +179,6 @@ export {
   deletePhoto,
   updatePhotoOrder,
   swapPhotoPositions,
+  clearFolderPhotos,
   deleteFolderPhotoOrders,
 };

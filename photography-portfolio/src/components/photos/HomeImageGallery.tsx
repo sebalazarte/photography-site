@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { StoredPhoto } from '../../types/photos';
 import './ImageGallery.css';
 import LightboxModal from './LightboxModal';
-import { deletePhotoFromFolder, updatePhotoOrder } from '../../api/photos';
+import { clearFolderPhotos, deletePhotoFromFolder, updatePhotoOrder } from '../../api/photos';
 import { useAuth } from '../../context/AuthContext';
 import { HOME_FOLDER } from '../../constants';
 
@@ -11,6 +11,40 @@ interface HomeImageGalleryProps {
   loading?: boolean;
   onPhotosChange?: (photos: StoredPhoto[]) => void;
 }
+
+const OriginIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M6 4l5.5 13 1.5-5 5 1.8L6 4z" fill="currentColor" stroke="none" />
+    <path d="M13 12l4 4" />
+  </svg>
+);
+
+const TargetIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="8" />
+    <path d="M8.5 12.5l2.5 2.5 4.5-5.5" />
+  </svg>
+);
 
 const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = false, onPhotosChange }) => {
   const galleryItems = photos ?? [];
@@ -22,6 +56,7 @@ const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = f
   const [orderingMode, setOrderingMode] = useState(false);
   const [sourcePhotoId, setSourcePhotoId] = useState<string | null>(null);
   const [savingOrder, setSavingOrder] = useState(false);
+  const [clearingAll, setClearingAll] = useState(false);
 
   useEffect(() => {
     if (!notice) return;
@@ -30,7 +65,7 @@ const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = f
   }, [notice]);
 
   const handleDeletePhoto = async (photo: StoredPhoto) => {
-    if (!canManage || deletingId === photo.id) return;
+    if (!canManage || deletingId === photo.id || clearingAll) return;
     const confirmed = window.confirm('¿Eliminar esta foto destacada? Esta acción no se puede deshacer.');
     if (!confirmed) return;
 
@@ -84,6 +119,30 @@ const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = f
     }
   };
 
+  const handleClearHome = async () => {
+    if (!canManage || clearingAll) return;
+    const confirmed = window.confirm('¿Eliminar todas las fotos destacadas? Esta acción no se puede deshacer.');
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setClearingAll(true);
+      const updated = await clearFolderPhotos(HOME_FOLDER);
+      onPhotosChange?.(updated);
+      setOrderingMode(false);
+      setSourcePhotoId(null);
+      setNotice({ type: 'success', message: 'Galería de inicio vaciada.' });
+    } catch (error) {
+      setNotice({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'No se pudieron eliminar todas las fotos',
+      });
+    } finally {
+      setClearingAll(false);
+    }
+  };
+
   if (!galleryItems.length) {
     return (
       <p className="text-secondary">
@@ -101,22 +160,32 @@ const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = f
               {sourcePhotoId ? 'Selecciona la foto destino.' : 'Selecciona la foto origen.'}
             </span>
           )}
-          <button
-            type="button"
-            className={`btn btn-sm ms-auto ${orderingMode ? 'btn-outline-primary' : 'btn-primary'}`}
-            onClick={() => {
-              setOrderingMode(current => {
-                const next = !current;
-                if (!next) {
-                  setSourcePhotoId(null);
-                }
-                return next;
-              });
-            }}
-            disabled={savingOrder}
-          >
-            {orderingMode ? 'Salir de ordenar' : 'Ordenar'}
-          </button>
+          <div className="ms-auto d-flex gap-2">
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-danger"
+              onClick={handleClearHome}
+              disabled={savingOrder || clearingAll}
+            >
+              {clearingAll ? 'Limpiando…' : 'Limpiar'}
+            </button>
+            <button
+              type="button"
+              className={`btn btn-sm ${orderingMode ? 'btn-outline-primary' : 'btn-primary'}`}
+              onClick={() => {
+                setOrderingMode(current => {
+                  const next = !current;
+                  if (!next) {
+                    setSourcePhotoId(null);
+                  }
+                  return next;
+                });
+              }}
+              disabled={savingOrder || clearingAll}
+            >
+              {orderingMode ? 'Salir de ordenar' : 'Ordenar'}
+            </button>
+          </div>
           {savingOrder && (
             <div className="w-100">
               <div className="progress" aria-hidden="true">
@@ -128,8 +197,16 @@ const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = f
         </div>
       )}
       <div className="masonry-grid">
-        {galleryItems.map((photo, index) => (
-          <figure key={photo.id} className="masonry-item">
+        {galleryItems.map((photo, index) => {
+          const positionValue = typeof photo.order === 'number' ? photo.order : index;
+          const displayPosition = positionValue + 1;
+          return (
+            <figure key={photo.id} className="masonry-item">
+              {canManage && orderingMode && (
+                <span className="masonry-item__position" aria-label="Posición actual">
+                  {displayPosition}
+                </span>
+              )}
             <button
               type="button"
               className="masonry-item__trigger"
@@ -186,7 +263,9 @@ const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = f
                   handleSelectSource(photo.id);
                 }}
               >
-                Origen
+                <span className="masonry-item__select-icon" aria-hidden="true">
+                  <OriginIcon />
+                </span>
               </button>
             )}
             {canManage && orderingMode && sourcePhotoId && (
@@ -202,11 +281,14 @@ const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = f
                   handleSelectTarget(photo.id);
                 }}
               >
-                {photo.id === sourcePhotoId ? 'Origen' : 'Destino'}
+                <span className="masonry-item__select-icon" aria-hidden="true">
+                  {photo.id === sourcePhotoId ? <OriginIcon /> : <TargetIcon />}
+                </span>
               </button>
             )}
           </figure>
-        ))}
+          );
+        })}
       </div>
 
       {activeIndex !== null && galleryItems[activeIndex] && (
