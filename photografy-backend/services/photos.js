@@ -48,7 +48,7 @@ const listPhotos = async (folderKey) => {
   if (needsNormalization) {
     const requests = sorted.map((entry, index) => ({
       method: 'PUT',
-      path: `/parse/classes/PhotoOrder/${entry.objectId}`,
+      path: `/classes/PhotoOrder/${entry.objectId}`,
       body: { position: index },
     }));
     await runBatch(requests);
@@ -121,7 +121,7 @@ const deleteFolderPhotoOrders = async (folderKey) => {
   if (!entries.length) return;
   const requests = entries.map((entry) => ({
     method: 'DELETE',
-    path: `/parse/classes/PhotoOrder/${entry.objectId}`,
+    path: `/classes/PhotoOrder/${entry.objectId}`,
   }));
   await runBatch(requests);
 };

@@ -97,6 +97,10 @@ const UploadPhotos: React.FC<UploadPhotosProps> = ({ folder, photos, onPhotosCha
   };
 
   const removePhoto = async (photoId: string) => {
+    const confirmed = window.confirm('¿Seguro que quieres eliminar esta foto? Esta acción no se puede deshacer.');
+    if (!confirmed) {
+      return;
+    }
     try {
       const updated = await deletePhotoFromFolder(folder, photoId);
       sync(updated);

@@ -1,6 +1,7 @@
 import { absolutizeFromApi, getParseContentOwner, parseRequest, runParseBatch, uploadParseFile } from './client';
 import { applySiteFilter, SITE_ID, HOME_FOLDER } from '../constants';
 import type { StoredPhoto } from '../types/photos';
+import { backendRequest, HAS_BACKEND, isNetworkError } from './backend';
 
 const PHOTO_ORDER_PATH = '/classes/PhotoOrder';
 
@@ -122,6 +123,19 @@ export const uploadToFolder = async (folder: string, files: FileList | File[]) =
 };
 
 export const deletePhotoFromFolder = async (folder: string, photoId: string) => {
+  if (HAS_BACKEND) {
+    const params = new URLSearchParams({ folder, id: photoId });
+    try {
+      return await backendRequest<StoredPhoto[]>(`/api/photos?${params.toString()}`, {
+        method: 'DELETE',
+      });
+    } catch (error) {
+      if (!isNetworkError(error)) {
+        throw error instanceof Error ? error : new Error('No se pudo eliminar la foto.');
+      }
+      console.warn('Fallo el backend al eliminar la foto, usando Parse directamente', error);
+    }
+  }
   requireOwnerId();
   await parseRequest(`${PHOTO_ORDER_PATH}/${photoId}`, {
     method: 'DELETE',
