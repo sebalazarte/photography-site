@@ -4,7 +4,7 @@ import './ImageGallery.css';
 import { useFolderPhotos } from '../../hooks/useFolderPhotos';
 import LightboxModal from './LightboxModal';
 import { useAuth } from '../../context/AuthContext';
-import { featurePhotoOnHome, updatePhotoOrder } from '../../api/photos';
+import { deletePhotoFromFolder, featurePhotoOnHome, updatePhotoOrder } from '../../api/photos';
 import { HOME_FOLDER } from '../../constants';
 
 interface ImageGalleryProps {
@@ -29,6 +29,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ folder, photos }) => {
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [savingOrder, setSavingOrder] = useState(false);
   const [featuringId, setFeaturingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
@@ -187,6 +188,31 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ folder, photos }) => {
     }
   }, [canReorder, featuringId, refreshHomePhotos, setHomePhotos]);
 
+  const handleDeletePhoto = useCallback(async (photo: StoredPhoto) => {
+    if (!canReorder || deletingId === photo.id) {
+      return;
+    }
+    const confirmed = window.confirm('¿Eliminar esta foto de la galería? Esta acción no se puede deshacer.');
+    if (!confirmed) {
+      return;
+    }
+    try {
+      setDeletingId(photo.id);
+      const updated = await deletePhotoFromFolder(folder, photo.id);
+      setOrderedItems(updated);
+      setHomePhotos(prev => prev.filter(item => item.id !== photo.id && item.filename !== photo.filename));
+      setNotice({ type: 'success', message: 'Foto eliminada.' });
+    } catch (error) {
+      console.error('No se pudo eliminar la foto', error);
+      setNotice({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'No se pudo eliminar la foto',
+      });
+    } finally {
+      setDeletingId(null);
+    }
+  }, [canReorder, deletingId, folder, setHomePhotos]);
+
   if (!galleryItems.length) {
     return <p className="text-secondary">{loading ? 'Cargando fotos...' : 'No hay fotos para mostrar aún.'}</p>;
   }
@@ -269,6 +295,38 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ folder, photos }) => {
                   decoding="async"
                 />
               </button>
+              {canReorder && (
+                <button
+                  type="button"
+                  className="masonry-item__delete"
+                  aria-label="Eliminar foto"
+                  title="Eliminar foto"
+                  disabled={savingOrder || deletingId === photo.id}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    void handleDeletePhoto(photo);
+                  }}
+                >
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    role="img"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M5 7h14M10 11v6M14 11v6M7 7l1 12h8l1-12M9 7V5h6v2"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+              )}
             </figure>
           );
         })}

@@ -41,6 +41,37 @@
   z-index: 1;
 }
 
+.masonry-item__delete {
+  position: absolute;
+  bottom: 0.65rem;
+  right: 0.65rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(220, 53, 69, 0.9);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease, transform 0.2s ease;
+  box-shadow: 0 6px 18px rgba(220, 53, 69, 0.35);
+}
+
+.masonry-item__delete:hover,
+.masonry-item__delete:focus-visible {
+  background: rgba(220, 53, 69, 1);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.masonry-item__delete:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 .masonry-item__action {
   pointer-events: auto;
   width: 34px;
