@@ -63,6 +63,8 @@ interface GalleryAdminPanelProps {
   creatingGallery: boolean;
   deletingGallerySlug: string | null;
   renamingSlug: string | null;
+  onReorderGalleries: (orderedSlugs: string[]) => Promise<void>;
+  savingOrder: boolean;
   disabled?: boolean;
 }
 
@@ -79,10 +81,14 @@ const GalleryAdminPanel: React.FC<GalleryAdminPanelProps> = ({
   creatingGallery,
   deletingGallerySlug,
   renamingSlug,
+  onReorderGalleries,
+  savingOrder,
   disabled = false,
 }) => {
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
+  const [draggedSlug, setDraggedSlug] = useState<string | null>(null);
+  const [dragOverSlug, setDragOverSlug] = useState<string | null>(null);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -127,6 +133,65 @@ const GalleryAdminPanel: React.FC<GalleryAdminPanelProps> = ({
     }
   };
 
+  const canDrag = !disabled && !savingOrder && !renamingSlug && editingSlug === null;
+
+  const handleDragStart = (event: React.DragEvent<HTMLLIElement>, slug: string) => {
+    if (!canDrag) {
+      event.preventDefault();
+      return;
+    }
+    setDraggedSlug(slug);
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', slug);
+  };
+
+  const handleDragOver = (event: React.DragEvent<HTMLLIElement>, slug: string) => {
+    if (!draggedSlug || draggedSlug === slug) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    setDragOverSlug(slug);
+  };
+
+  const handleDragLeave = (_event: React.DragEvent<HTMLLIElement>, slug: string) => {
+    if (dragOverSlug === slug) {
+      setDragOverSlug(null);
+    }
+  };
+
+  const handleDrop = async (event: React.DragEvent<HTMLLIElement>, targetSlug: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!draggedSlug || draggedSlug === targetSlug) {
+      setDragOverSlug(null);
+      setDraggedSlug(null);
+      return;
+    }
+
+    const orderedSlugs = galleries.map(g => g.slug);
+    const fromIndex = orderedSlugs.indexOf(draggedSlug);
+    const toIndex = orderedSlugs.indexOf(targetSlug);
+    if (fromIndex === -1 || toIndex === -1) {
+      setDragOverSlug(null);
+      setDraggedSlug(null);
+      return;
+    }
+
+    orderedSlugs.splice(fromIndex, 1);
+    orderedSlugs.splice(toIndex, 0, draggedSlug);
+
+    try {
+      await onReorderGalleries(orderedSlugs);
+    } finally {
+      setDragOverSlug(null);
+      setDraggedSlug(null);
+    }
+  };
+
+  const handleDragEnd = () => {
+    setDragOverSlug(null);
+    setDraggedSlug(null);
+  };
+
   return (
     <section className="col-12 col-md-4">
       <div className="card shadow-sm">
@@ -155,14 +220,47 @@ const GalleryAdminPanel: React.FC<GalleryAdminPanelProps> = ({
             <p className="text-secondary mb-0">Cargando…</p>
           ) : (
             <ul className="list-group">
+              {galleries.length > 1 && (
+                <li className="list-group-item">
+                  {savingOrder ? (
+                    <div>
+                      <div className="progress mb-2" aria-hidden="true">
+                        <div className="progress-bar progress-bar-striped progress-bar-animated" style={{ width: '100%' }}></div>
+                      </div>
+                      <span className="text-secondary small">Guardando nuevo orden…</span>
+                    </div>
+                  ) : (
+                    <span className="text-secondary small">Arrastra y suelta para reordenar.</span>
+                  )}
+                </li>
+              )}
               {galleries.map(gallery => {
                 const isSelected = selectedGalleryId === gallery.slug;
                 const isDeleting = deletingGallerySlug === gallery.slug;
                 const isRenaming = renamingSlug === gallery.slug;
                 const isEditing = editingSlug === gallery.slug;
                 const count = photoCounts[gallery.slug] ?? 0;
+                const isDragSource = draggedSlug === gallery.slug;
+                const isDragTarget = dragOverSlug === gallery.slug && draggedSlug !== gallery.slug;
+                const itemClasses = [
+                  'list-group-item',
+                  isDragTarget ? 'border-primary-subtle bg-light' : '',
+                  isDragSource ? 'opacity-50' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ');
                 return (
-                  <li key={gallery.slug} className="list-group-item">
+                  <li
+                    key={gallery.slug}
+                    className={itemClasses}
+                    draggable={canDrag && !isEditing}
+                    onDragStart={event => handleDragStart(event, gallery.slug)}
+                    onDragOver={event => handleDragOver(event, gallery.slug)}
+                    onDragLeave={event => handleDragLeave(event, gallery.slug)}
+                    onDrop={event => handleDrop(event, gallery.slug)}
+                    onDragEnd={handleDragEnd}
+                    aria-grabbed={isDragSource}
+                  >
                     {isEditing ? (
                       <form
                         className="d-flex flex-column flex-sm-row gap-2 align-items-stretch"

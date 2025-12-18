@@ -20,12 +20,29 @@ const slugify = (str) =>
 
 const galleryFolderKey = (slug) => `galleries/${slug}`;
 
+const sortGalleriesByPosition = (entries = []) => {
+  const normalize = (value, fallback) => (Number.isFinite(value) ? value : fallback);
+  return [...entries].sort((a, b) => {
+    const posA = normalize(a.position, Number.MAX_SAFE_INTEGER);
+    const posB = normalize(b.position, Number.MAX_SAFE_INTEGER);
+    if (posA !== posB) {
+      return posA - posB;
+    }
+    const slugA = typeof a.slug === 'string' ? a.slug : '';
+    const slugB = typeof b.slug === 'string' ? b.slug : '';
+    return slugA.localeCompare(slugB);
+  });
+};
+
 const listGalleries = async () => {
   const where = buildWhere({});
-  const data = await parseRequest(`/classes/Gallery?where=${where}&order=slug`);
-  return Array.isArray(data?.results)
-    ? data.results.map(({ name, slug }) => ({ name, slug }))
-    : [];
+  const data = await parseRequest(`/classes/Gallery?where=${where}&limit=1000`);
+  const entries = Array.isArray(data?.results) ? data.results : [];
+  return sortGalleriesByPosition(entries).map(({ name, slug, position }) => ({
+    name,
+    slug,
+    position: Number.isFinite(position) ? position : null,
+  }));
 };
 
 const findGalleryBySlug = async (slug) => {
@@ -34,11 +51,12 @@ const findGalleryBySlug = async (slug) => {
   return Array.isArray(data?.results) ? data.results[0] ?? null : null;
 };
 
-const ensureUniqueSlug = async (name) => {
+const ensureUniqueSlug = async (name, existingList) => {
   const base = slugify(name);
-  const where = buildWhere({});
-  const data = await parseRequest(`/classes/Gallery?where=${where}&limit=1000`);
-  const existing = new Set((data?.results ?? []).map((gallery) => gallery.slug));
+  const entries = Array.isArray(existingList) && existingList.length
+    ? existingList
+    : await listGalleries();
+  const existing = new Set(entries.map((gallery) => gallery.slug));
   if (!existing.has(base)) {
     return base;
   }
@@ -51,12 +69,25 @@ const ensureUniqueSlug = async (name) => {
   return candidate;
 };
 
+const nextPositionFromList = (entries = []) => {
+  if (!entries.length) {
+    return 0;
+  }
+  const max = entries.reduce((current, gallery, index) => {
+    const value = Number.isFinite(gallery.position) ? gallery.position : index;
+    return Math.max(current, value);
+  }, -1);
+  return max + 1;
+};
+
 const createGallery = async (name) => {
   const finalName = name.trim();
   if (!finalName) {
     throw new Error('nombre requerido');
   }
-  const slug = await ensureUniqueSlug(finalName);
+  const existing = await listGalleries();
+  const slug = await ensureUniqueSlug(finalName, existing);
+  const position = nextPositionFromList(existing);
   await parseRequest('/classes/Gallery', {
     method: 'POST',
     headers: {
@@ -65,6 +96,7 @@ const createGallery = async (name) => {
     body: JSON.stringify({
       name: finalName,
       slug,
+      position,
       ...(SITE_ID ? { siteId: SITE_ID } : {}),
     }),
   });
@@ -102,10 +134,40 @@ const deleteGallery = async (slug) => {
   return listGalleries();
 };
 
+const updateGalleryPositions = async (positions = []) => {
+  if (!Array.isArray(positions) || !positions.length) {
+    return listGalleries();
+  }
+
+  const lookups = new Map();
+  for (const { slug } of positions) {
+    if (!slug || lookups.has(slug)) continue;
+    const gallery = await findGalleryBySlug(slug);
+    if (gallery) {
+      lookups.set(slug, gallery);
+    }
+  }
+
+  for (const entry of positions) {
+    const gallery = lookups.get(entry.slug);
+    if (!gallery || !Number.isFinite(entry.position)) continue;
+    await parseRequest(`/classes/Gallery/${gallery.objectId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ position: entry.position }),
+    });
+  }
+
+  return listGalleries();
+};
+
 export {
   galleryFolderKey,
   listGalleries,
   createGallery,
   updateGalleryName,
   deleteGallery,
+  updateGalleryPositions,
 };

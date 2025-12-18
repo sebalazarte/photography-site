@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import UploadPhotos from '../components/photos/UploadPhotos';
 import { galleryFolderKey } from '../constants';
 import { useAuth } from '../context/AuthContext';
-import { createGallery, deleteGallery as deleteGalleryApi, fetchGalleries, updateGalleryName, type GalleryDTO } from '../api/galleries';
+import { createGallery, deleteGallery as deleteGalleryApi, fetchGalleries, updateGalleryName, updateGalleryPositions, type GalleryDTO } from '../api/galleries';
 import { listFolderPhotos } from '../api/photos';
 import { useFolderPhotos } from '../hooks/useFolderPhotos';
 import GalleryAdminPanel from '../components/photos/GalleryAdminPanel';
@@ -20,6 +20,7 @@ const AdminGalleries = () => {
   const [creatingGallery, setCreatingGallery] = useState(false);
   const [deletingGallerySlug, setDeletingGallerySlug] = useState<string | null>(null);
   const [renamingSlug, setRenamingSlug] = useState<string | null>(null);
+  const [savingOrder, setSavingOrder] = useState(false);
   const folderKey = selectedGalleryId ? galleryFolderKey(selectedGalleryId) : undefined;
   const { photos: selectedPhotos, setPhotos: setSelectedPhotos } = useFolderPhotos(folderKey);
 
@@ -157,9 +158,23 @@ const AdminGalleries = () => {
           onAddGallery={addGallery}
           onDeleteGallery={deleteGallery}
           onRenameGallery={renameGallery}
+          onReorderGalleries={async (orderedSlugs) => {
+            try {
+              setSavingOrder(true);
+              const positions = orderedSlugs.map((slug, index) => ({ slug, position: index }));
+              const updated = await updateGalleryPositions(positions);
+              setGalleries(updated);
+              await refreshCounts(updated);
+            } catch (error) {
+              alert(error instanceof Error ? error.message : 'No se pudo reordenar las galerías');
+            } finally {
+              setSavingOrder(false);
+            }
+          }}
           creatingGallery={creatingGallery}
           deletingGallerySlug={deletingGallerySlug}
           renamingSlug={renamingSlug}
+          savingOrder={savingOrder}
           disabled={loading}
         />
 

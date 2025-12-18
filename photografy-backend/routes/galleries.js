@@ -3,6 +3,7 @@ import {
   createGallery,
   deleteGallery,
   listGalleries,
+  updateGalleryPositions,
   updateGalleryName,
 } from '../services/galleries.js';
 
@@ -29,6 +30,16 @@ router.post('/', async (req, res, next) => {
 router.put('/:slug', async (req, res, next) => {
   try {
     const galleries = await updateGalleryName(req.params.slug, req.body?.name || '');
+    res.json(galleries);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/positions/bulk', async (req, res, next) => {
+  try {
+    const positions = Array.isArray(req.body?.positions) ? req.body.positions : [];
+    const galleries = await updateGalleryPositions(positions);
     res.json(galleries);
   } catch (error) {
     next(error);
