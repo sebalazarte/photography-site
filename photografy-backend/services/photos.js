@@ -10,6 +10,71 @@ const withSiteFilter = (query = {}) => (
 
 const buildWhere = (query = {}) => encodeWhere(withSiteFilter(query));
 
+const GROUP_OBJECT_KEYS = ['value', 'name', 'label', 'title', 'slug', 'code', 'displayName', 'objectId', 'id'];
+const GROUP_FIELD_CANDIDATES = ['group', 'grupo', 'groupId', 'groupNumber', 'groupValue', 'homeGroup'];
+
+const normalizeGroupValue = (value) => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return null;
+    }
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : trimmed;
+  }
+  if (value && typeof value === 'object') {
+    for (const key of GROUP_OBJECT_KEYS) {
+      if (Object.prototype.hasOwnProperty.call(value, key)) {
+        const nested = normalizeGroupValue(value[key]);
+        if (nested !== null) {
+          return nested;
+        }
+      }
+    }
+  }
+  return null;
+};
+
+const extractEntryGroup = (entry = {}) => {
+  for (const field of GROUP_FIELD_CANDIDATES) {
+    if (Object.prototype.hasOwnProperty.call(entry, field)) {
+      const candidate = entry[field];
+      const normalized = normalizeGroupValue(candidate);
+      if (normalized !== null) {
+        return normalized;
+      }
+    }
+  }
+  return null;
+};
+
+const compareGroups = (left, right) => {
+  const groupA = extractEntryGroup(left);
+  const groupB = extractEntryGroup(right);
+  if (groupA === groupB) {
+    return 0;
+  }
+  if (groupA === null) {
+    return 1;
+  }
+  if (groupB === null) {
+    return -1;
+  }
+  if (typeof groupA === 'number' && typeof groupB === 'number') {
+    return groupA - groupB;
+  }
+  const textA = String(groupA);
+  const textB = String(groupB);
+  const localeResult = textA.localeCompare(textB, undefined, { sensitivity: 'base', numeric: true });
+  if (localeResult !== 0) {
+    return localeResult;
+  }
+  return textA < textB ? -1 : 1;
+};
+
 const mapPhoto = (entry, index) => ({
   id: entry.objectId,
   filename: entry.photoId ?? entry.photoFile?.name ?? entry.objectId,
@@ -17,11 +82,16 @@ const mapPhoto = (entry, index) => ({
   url: entry.photoFile?.url ?? '',
   uploadedAt: entry.updatedAt ?? entry.createdAt,
   size: entry.fileSize ?? null,
+  group: extractEntryGroup(entry),
   order: index,
 });
 
 const sortPhotoEntries = (entries) => {
   const sorted = [...entries].sort((a, b) => {
+    const groupResult = compareGroups(a, b);
+    if (groupResult !== 0) {
+      return groupResult;
+    }
     const posA = Number.isFinite(a.position) ? a.position : Number.MAX_SAFE_INTEGER;
     const posB = Number.isFinite(b.position) ? b.position : Number.MAX_SAFE_INTEGER;
     if (posA !== posB) return posA - posB;
@@ -40,7 +110,7 @@ const sortPhotoEntries = (entries) => {
 
 const listPhotos = async (folderKey) => {
   const where = buildWhere({ folderKey });
-  const data = await parseRequest(`/classes/PhotoOrder?where=${where}&order=position,createdAt&limit=1000`);
+  const data = await parseRequest(`/classes/PhotoOrder?where=${where}&order=position,createdAt&limit=1000&include=group`);
   const entries = Array.isArray(data?.results) ? data.results : [];
 
   const { sorted, needsNormalization } = sortPhotoEntries(entries);

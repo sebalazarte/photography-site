@@ -122,13 +122,28 @@
   position: absolute;
   top: 0.65rem;
   left: 0.65rem;
-  border-radius: 999px;
-  padding: 0.2rem 0.75rem;
+  border-radius: 0.75rem;
+  padding: 0.3rem 0.75rem;
   font-size: 0.75rem;
   font-weight: 600;
   color: #fff;
   background: rgba(33, 37, 41, 0.85);
   box-shadow: 0 6px 18px rgba(33, 37, 41, 0.35);
+  display: inline-flex;
+  flex-direction: column;
+  line-height: 1.1;
+  gap: 0.05rem;
+}
+
+.masonry-item__position-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.9;
+}
+
+.masonry-item__position-meta {
+  font-size: 0.78rem;
 }
 
 .masonry-item__action {

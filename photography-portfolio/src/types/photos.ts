@@ -5,5 +5,6 @@ export interface StoredPhoto {
   url: string;
   uploadedAt: string;
   size: number | null;
+  group?: number | string | null;
   order?: number;
 }

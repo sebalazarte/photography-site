@@ -46,6 +46,23 @@ const TargetIcon = () => (
   </svg>
 );
 
+type GroupKey = number | string | null;
+
+const normalizeGroup = (group?: StoredPhoto['group'] | string | null): GroupKey => {
+  if (typeof group === 'number' && Number.isFinite(group)) {
+    return group;
+  }
+  if (typeof group === 'string') {
+    const trimmed = group.trim();
+    if (!trimmed) {
+      return null;
+    }
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : trimmed;
+  }
+  return null;
+};
+
 const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = false, onPhotosChange }) => {
   const galleryItems = photos ?? [];
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
@@ -55,6 +72,7 @@ const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = f
   const canManage = Boolean(user);
   const [orderingMode, setOrderingMode] = useState(false);
   const [sourcePhotoId, setSourcePhotoId] = useState<string | null>(null);
+  const [sourceGroup, setSourceGroup] = useState<GroupKey>(null);
   const [savingOrder, setSavingOrder] = useState(false);
   const [clearingAll, setClearingAll] = useState(false);
 
@@ -63,6 +81,20 @@ const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = f
     const timer = setTimeout(() => setNotice(null), 2000);
     return () => clearTimeout(timer);
   }, [notice]);
+
+  useEffect(() => {
+    if (!sourcePhotoId) return;
+    const current = galleryItems.find(photo => photo.id === sourcePhotoId);
+    if (!current) {
+      setSourcePhotoId(null);
+      setSourceGroup(null);
+      return;
+    }
+    const normalized = normalizeGroup(current.group);
+    if (normalized !== sourceGroup) {
+      setSourceGroup(normalized);
+    }
+  }, [galleryItems, sourcePhotoId, sourceGroup]);
 
   const handleDeletePhoto = async (photo: StoredPhoto) => {
     if (!canManage || deletingId === photo.id || clearingAll) return;
@@ -87,6 +119,8 @@ const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = f
   const handleSelectSource = (photoId: string) => {
     if (savingOrder) return;
     setSourcePhotoId(photoId);
+    const selected = galleryItems.find(photo => photo.id === photoId);
+    setSourceGroup(normalizeGroup(selected?.group));
   };
 
   const handleSelectTarget = async (targetPhotoId: string) => {
@@ -96,6 +130,21 @@ const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = f
     const toIndex = orderIds.indexOf(targetPhotoId);
     if (fromIndex === -1 || toIndex === -1) {
       setSourcePhotoId(null);
+      setSourceGroup(null);
+      return;
+    }
+
+    const fromPhoto = galleryItems[fromIndex];
+    const toPhoto = galleryItems[toIndex];
+    const fromGroup = normalizeGroup(fromPhoto?.group);
+    const toGroup = normalizeGroup(toPhoto?.group);
+    if (fromGroup !== toGroup) {
+      setNotice({
+        type: 'error',
+        message: 'Solo puedes reordenar dentro del mismo grupo.',
+      });
+      setSourcePhotoId(null);
+      setSourceGroup(null);
       return;
     }
 
@@ -116,6 +165,7 @@ const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = f
     } finally {
       setSavingOrder(false);
       setSourcePhotoId(null);
+      setSourceGroup(null);
     }
   };
 
@@ -132,6 +182,7 @@ const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = f
       onPhotosChange?.(updated);
       setOrderingMode(false);
       setSourcePhotoId(null);
+      setSourceGroup(null);
       setNotice({ type: 'success', message: 'Galería de inicio vaciada.' });
     } catch (error) {
       setNotice({
@@ -177,6 +228,7 @@ const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = f
                   const next = !current;
                   if (!next) {
                     setSourcePhotoId(null);
+                    setSourceGroup(null);
                   }
                   return next;
                 });
@@ -200,11 +252,21 @@ const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = f
         {galleryItems.map((photo, index) => {
           const positionValue = typeof photo.order === 'number' ? photo.order : index;
           const displayPosition = positionValue + 1;
+          const photoGroup = normalizeGroup(photo.group);
+          const groupLabel = photoGroup === null ? 'Sin grupo' : `G: ${photoGroup}`;
+          const isSourcePhoto = sourcePhotoId === photo.id;
+          const matchesSourceGroup = sourcePhotoId ? photoGroup === sourceGroup : true;
+          const targetDisabled = isSourcePhoto || savingOrder;
+          const targetTitle = isSourcePhoto
+            ? 'Origen seleccionado'
+            : 'Seleccionar como destino';
+          const shouldShowTargetButton = Boolean(sourcePhotoId && (matchesSourceGroup || isSourcePhoto));
           return (
             <figure key={photo.id} className="masonry-item">
               {canManage && orderingMode && (
-                <span className="masonry-item__position" aria-label="Posición actual">
-                  {displayPosition}
+                <span className="masonry-item__position" aria-label="Grupo y posición actual">
+                  <span className="masonry-item__position-label">{groupLabel}</span>
+                  <span className="masonry-item__position-meta">P: {displayPosition}</span>
                 </span>
               )}
             <button
@@ -268,13 +330,13 @@ const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = f
                 </span>
               </button>
             )}
-            {canManage && orderingMode && sourcePhotoId && (
+            {canManage && orderingMode && shouldShowTargetButton && (
               <button
                 type="button"
-                className={`masonry-item__select masonry-item__select--target ${photo.id === sourcePhotoId ? 'is-selected' : ''}`}
+                className={`masonry-item__select masonry-item__select--target ${isSourcePhoto ? 'is-selected' : ''}`}
                 aria-label="Seleccionar destino"
-                title={photo.id === sourcePhotoId ? 'Origen seleccionado' : 'Seleccionar como destino'}
-                disabled={photo.id === sourcePhotoId || savingOrder}
+                title={targetTitle}
+                disabled={targetDisabled}
                 onClick={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
@@ -282,7 +344,7 @@ const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = f
                 }}
               >
                 <span className="masonry-item__select-icon" aria-hidden="true">
-                  {photo.id === sourcePhotoId ? <OriginIcon /> : <TargetIcon />}
+                  {isSourcePhoto ? <OriginIcon /> : <TargetIcon />}
                 </span>
               </button>
             )}
