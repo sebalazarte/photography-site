@@ -328,10 +328,10 @@ export const UsersIcon = ({ width = 16, height = 16, ...props }: IconProps) => (
     aria-hidden="true"
     {...props}
   >
-    <path d="M9 7a4 4 0 1 1 6 3.465" />
-    <path d="M3 21c0-3.314 2.686-6 6-6h6" />
-    <path d="M16 15c2.5 0 5 1.5 5 4" />
-    <path d="M13 10a4 4 0 0 1-6 3" />
+    <circle cx="9" cy="8" r="3.5" />
+    <circle cx="16.5" cy="9.5" r="2.5" />
+    <path d="M3 20c0-3.314 2.686-6 6-6h2" />
+    <path d="M14 14h1c3 0 6 2 6 5" />
   </svg>
 );
 
@@ -348,8 +348,11 @@ export const SiteDataIcon = ({ width = 16, height = 16, ...props }: IconProps) =
     aria-hidden="true"
     {...props}
   >
-    <circle cx="12" cy="12" r="3" />
-    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 7.04 3.1l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V1a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.08a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c0 .69.28 1.35.77 1.83.49.48 1.14.77 1.83.77H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    <rect x="4" y="6" width="16" height="12" rx="2" />
+    <path d="M7 9h3" />
+    <rect x="7" y="12" width="3" height="3" rx="0.5" />
+    <path d="M13 12h4" />
+    <path d="M13 15h4" />
   </svg>
 );
 
@@ -366,10 +369,10 @@ export const PasswordIcon = ({ width = 16, height = 16, ...props }: IconProps) =
     aria-hidden="true"
     {...props}
   >
-    <path d="M3 12l2-2 2 2 2-2 2 2" />
-    <path d="M14 7a4 4 0 1 1 6 3" />
-    <path d="M12 12l3 3" />
-    <path d="M11 17l4 4 4-4" />
+    <rect x="5" y="11" width="14" height="9" rx="2" />
+    <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    <circle cx="12" cy="15" r="1" />
+    <path d="M12 16v2" />
   </svg>
 );
 
