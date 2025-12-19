@@ -1,15 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type React from 'react';
 import type { CustomerRecord } from '../../api/users';
 
 export interface CustomerFormValues {
   username: string;
-  password: string;
   email: string;
   name: string;
   phone: string;
-  whatsapp: string;
-  about: string;
 }
 
 interface CustomerFormProps {
@@ -21,12 +18,9 @@ interface CustomerFormProps {
 
 const emptyForm: CustomerFormValues = {
   username: '',
-  password: '',
   email: '',
   name: '',
   phone: '',
-  whatsapp: '',
-  about: '',
 };
 
 const CustomerForm: React.FC<CustomerFormProps> = ({ mode, customer, onSubmit, onCancel }) => {
@@ -39,12 +33,9 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode, customer, onSubmit, o
     if (mode === 'edit' && customer) {
       setForm({
         username: customer.username,
-        password: '',
         email: customer.email ?? '',
         name: customer.name ?? '',
         phone: customer.phone ?? '',
-        whatsapp: customer.whatsapp ?? '',
-        about: customer.about ?? '',
       });
     } else {
       setForm(emptyForm);
@@ -52,9 +43,6 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode, customer, onSubmit, o
     setError(null);
     setSuccess(null);
   }, [mode, customer?.id]);
-
-  const phoneDigits = useMemo(() => form.phone.replace(/\D+/g, ''), [form.phone]);
-  const whatsappValue = phoneDigits ? `https://wa.me/${phoneDigits}` : '';
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = event.target;
@@ -67,13 +55,8 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode, customer, onSubmit, o
     setSuccess(null);
 
     const username = form.username.trim();
-    const password = form.password.trim();
     if (!username) {
       setError('El usuario es obligatorio.');
-      return;
-    }
-    if (mode === 'create' && !password) {
-      setError('La contraseña es obligatoria para un nuevo cliente.');
       return;
     }
 
@@ -81,12 +64,9 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode, customer, onSubmit, o
       setSubmitting(true);
       const result = await onSubmit({
         username,
-        password,
         email: form.email.trim(),
         name: form.name.trim(),
         phone: form.phone.trim(),
-        whatsapp: whatsappValue,
-        about: form.about.trim(),
       });
       setSuccess(`Cliente "${result.name ?? result.username}" guardado correctamente.`);
       if (mode === 'create') {
@@ -94,12 +74,9 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode, customer, onSubmit, o
       } else {
         setForm({
           username: result.username,
-          password: '',
           email: result.email ?? '',
           name: result.name ?? '',
           phone: result.phone ?? '',
-          whatsapp: result.whatsapp ?? '',
-          about: result.about ?? '',
         });
       }
     } catch (err) {
@@ -146,23 +123,6 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode, customer, onSubmit, o
               />
             </div>
             <div className="col-12 col-md-6">
-              <label htmlFor="password" className="form-label">{isEdit ? 'Nueva contraseña' : 'Contraseña *'}</label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                className="form-control"
-                value={form.password}
-                onChange={handleChange}
-                autoComplete="new-password"
-                placeholder={isEdit ? 'Ingresa una nueva contraseña para actualizarla (opcional)' : undefined}
-                disabled={submitting}
-              />
-            </div>
-          </div>
-
-          <div className="row g-3">
-            <div className="col-12 col-md-6">
               <label htmlFor="name" className="form-label">Nombre</label>
               <input
                 id="name"
@@ -174,6 +134,9 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode, customer, onSubmit, o
                 disabled={submitting}
               />
             </div>
+          </div>
+
+          <div className="row g-3">
             <div className="col-12 col-md-6">
               <label htmlFor="email" className="form-label">Email</label>
               <input
@@ -187,9 +150,6 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode, customer, onSubmit, o
                 disabled={submitting}
               />
             </div>
-          </div>
-
-          <div className="row g-3">
             <div className="col-12 col-md-6">
               <label htmlFor="phone" className="form-label">Teléfono</label>
               <input
@@ -202,29 +162,6 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode, customer, onSubmit, o
                 disabled={submitting}
               />
             </div>
-            <div className="col-12 col-md-6">
-              <label htmlFor="whatsapp" className="form-label">WhatsApp (generado)</label>
-              <input
-                id="whatsapp"
-                name="whatsapp"
-                className="form-control"
-                value={whatsappValue}
-                readOnly
-              />
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="about" className="form-label">Acerca de</label>
-            <textarea
-              id="about"
-              name="about"
-              className="form-control"
-              rows={8}
-              value={form.about}
-              onChange={handleChange}
-              disabled={submitting}
-            />
           </div>
 
           {error && <div className="alert alert-danger" role="alert">{error}</div>}

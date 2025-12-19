@@ -56,14 +56,11 @@ const AdminCustomers = () => {
       email: values.email,
       name: values.name,
       phone: values.phone,
-      whatsapp: values.whatsapp,
-      about: values.about,
     };
 
     if (selectedCustomer) {
       const updated = await updateCustomerAccount(selectedCustomer.id, {
         ...basePayload,
-        password: values.password || undefined,
       });
       await loadCustomers();
       setSelectedId(updated.id);
@@ -72,7 +69,7 @@ const AdminCustomers = () => {
 
     const created = await createCustomerAccount({
       username: values.username,
-      password: values.password,
+      password: values.username,
       ...basePayload,
     });
     await loadCustomers();
