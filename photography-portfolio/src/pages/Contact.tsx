@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import ContactPhotoManager from '../components/photos/ContactPhotoManager';
 import { useSite } from '../context/SiteContext';
 import { formatWhatsappLink } from '../utils/contact';
-import { updateSiteProfile } from '../api/site';
+import { updateSiteAbout } from '../api/site';
 import { improveContactDescription } from '../api/ai';
 import { EditIcon, SparklesIcon } from '../types/icons';
 
@@ -57,7 +57,7 @@ const Contact: React.FC = () => {
       setAboutError(null);
       setAiError(null);
       setAiStatus('idle');
-      await updateSiteProfile({ about: aboutDraft.trim() });
+      await updateSiteAbout(aboutDraft.trim());
       await refreshSite();
       setAboutStatus('success');
       setEditingAbout(false);

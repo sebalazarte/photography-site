@@ -37,6 +37,12 @@ const sanitizeValue = (value?: string | null) => {
   return trimmed ? trimmed : undefined;
 };
 
+const normalizeField = (value?: string) => {
+  if (value === undefined) return undefined;
+  const sanitized = sanitizeValue(value);
+  return sanitized ?? '';
+};
+
 const mapToSiteProfile = (record: ParseSiteRecord): SiteProfile => {
   const identifier = sanitizeValue(record.slug) ?? sanitizeValue(record.handle) ?? record.objectId;
   return {
@@ -89,21 +95,28 @@ export interface UpdateSiteProfileInput {
   about?: string;
 }
 
-type NormalizedSiteInput = {
-  name: string;
-  email: string;
-  phone: string;
-  whatsapp: string;
-  about: string;
-};
+type NormalizedSiteInput = Partial<Record<'name' | 'email' | 'phone' | 'whatsapp' | 'about', string>>;
 
-const normalizeInput = (input: UpdateSiteProfileInput = {}): NormalizedSiteInput => ({
-  name: sanitizeValue(input.name) ?? '',
-  email: sanitizeValue(input.email) ?? '',
-  phone: sanitizeValue(input.phone) ?? '',
-  whatsapp: sanitizeValue(input.whatsapp) ?? '',
-  about: sanitizeValue(input.about) ?? '',
-});
+const normalizeInput = (input: UpdateSiteProfileInput = {}): NormalizedSiteInput => {
+  const normalized: NormalizedSiteInput = {};
+
+  const maybeName = normalizeField(input.name);
+  if (maybeName !== undefined) normalized.name = maybeName;
+
+  const maybeEmail = normalizeField(input.email);
+  if (maybeEmail !== undefined) normalized.email = maybeEmail;
+
+  const maybePhone = normalizeField(input.phone);
+  if (maybePhone !== undefined) normalized.phone = maybePhone;
+
+  const maybeWhatsapp = normalizeField(input.whatsapp);
+  if (maybeWhatsapp !== undefined) normalized.whatsapp = maybeWhatsapp;
+
+  const maybeAbout = normalizeField(input.about);
+  if (maybeAbout !== undefined) normalized.about = maybeAbout;
+
+  return normalized;
+};
 
 const buildParsePayload = (input: NormalizedSiteInput) => {
   const payload: Record<string, string | null> = {};
@@ -170,4 +183,39 @@ export const updateSiteProfile = async (input: UpdateSiteProfileInput) => {
     }
   }
   return updateSiteProfileViaParse(normalized);
+};
+
+const normalizeAboutOnly = (about: string): NormalizedSiteInput => {
+  const normalizedAbout = normalizeField(about);
+  if (normalizedAbout === undefined) {
+    throw new Error('Agrega un texto para actualizar la descripción.');
+  }
+  return { about: normalizedAbout };
+};
+
+const updateSiteAboutViaParse = async (about: string) => {
+  const normalized = normalizeAboutOnly(about);
+  return updateSiteProfileViaParse(normalized);
+};
+
+export const updateSiteAbout = async (about: string) => {
+  const normalized = normalizeAboutOnly(about);
+  if (HAS_BACKEND) {
+    try {
+      const query = buildSiteQuery();
+      return await backendRequest<SiteProfile>(`/api/site/about?${query}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(normalized),
+      });
+    } catch (error) {
+      if (!isNetworkError(error)) {
+        throw error instanceof Error ? error : new Error('No se pudo actualizar la descripción.');
+      }
+      console.warn('No se pudo usar el backend para actualizar la descripción, usando Parse', error);
+    }
+  }
+  return updateSiteAboutViaParse(about);
 };

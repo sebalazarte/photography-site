@@ -67,6 +67,14 @@ const buildUpdatePayload = (input = {}) => {
   return payload;
 };
 
+const buildAboutPayload = (value) => {
+  if (value === undefined) {
+    throw new Error('El campo about es requerido');
+  }
+  const trimmed = typeof value === 'string' ? value.trim() : '';
+  return { acercaDe: trimmed || null };
+};
+
 const updateSiteProfile = async (siteId, input = {}) => {
   const id = ensureSiteId(siteId);
   const payload = buildUpdatePayload(input);
@@ -96,7 +104,35 @@ const updateSiteProfile = async (siteId, input = {}) => {
   return getSiteProfile(id);
 };
 
+const updateSiteAbout = async (siteId, about) => {
+  const id = ensureSiteId(siteId);
+  const payload = buildAboutPayload(about);
+  const existing = await fetchSiteRecord(id);
+
+  if (!existing) {
+    await parseRequest('/classes/Site', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ siteId: id, ...payload }),
+    });
+    return getSiteProfile(id);
+  }
+
+  await parseRequest(`/classes/Site/${existing.objectId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return getSiteProfile(id);
+};
+
 export {
   getSiteProfile,
   updateSiteProfile,
+  updateSiteAbout,
 };

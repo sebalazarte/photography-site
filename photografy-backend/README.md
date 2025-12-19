@@ -49,6 +49,7 @@ Servidor Express que actúa como fachada para la API de Parse (Back4App). Recibe
 - `POST /api/photos?folder=...`: sube nuevas fotos; los archivos se envían a Parse como `File` y se crea el registro correspondiente en `PhotoOrder`.
 - `DELETE /api/photos?id=<objectId>&folder=...`: borra una foto (por `objectId`).
 - `PUT /api/photos/order`: guarda el orden manual de las fotos.
+- `PUT /api/site/about`: actualiza únicamente la descripción (`acercaDe`) del sitio.
 - `POST /api/ai/improve-text`: devuelve una versión mejorada del texto recibido (requiere configurar `OPENAI_API_KEY`).
 
 Toda la información se guarda en Back4App, por lo que ya no existe la carpeta `data/` ni `storage/` en este proyecto.
