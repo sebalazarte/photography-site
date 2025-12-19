@@ -2,6 +2,25 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 const OPENAI_API_URL = process.env.OPENAI_API_URL || 'https://api.openai.com/v1/chat/completions';
 
+const resolveTemperature = () => {
+  const raw = process.env.OPENAI_TEMPERATURE;
+  if (typeof raw !== 'string') {
+    return undefined;
+  }
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  const numeric = Number(trimmed);
+  if (Number.isNaN(numeric)) {
+    console.warn('OPENAI_TEMPERATURE inválido. Se ignorará y se usará el valor por defecto del modelo.');
+    return undefined;
+  }
+  return numeric;
+};
+
+const OPENAI_TEMPERATURE = resolveTemperature();
+
 const ensureOpenAIReady = () => {
   if (!OPENAI_API_KEY.trim()) {
     throw new Error('Configura OPENAI_API_KEY para usar la mejora con IA.');
@@ -39,17 +58,21 @@ const improveDescriptionCopy = async (text) => {
   }
   ensureOpenAIReady();
 
+  const payload = {
+    model: OPENAI_MODEL,
+    messages: buildMessages(input),
+  };
+  if (typeof OPENAI_TEMPERATURE === 'number') {
+    payload.temperature = OPENAI_TEMPERATURE;
+  }
+
   const response = await fetch(OPENAI_API_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${OPENAI_API_KEY}`,
     },
-    body: JSON.stringify({
-      model: OPENAI_MODEL,
-      temperature: 0.35,
-      messages: buildMessages(input),
-    }),
+    body: JSON.stringify(payload),
   });
 
   const raw = await response.text();

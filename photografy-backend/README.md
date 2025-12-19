@@ -20,6 +20,7 @@ Servidor Express que actúa como fachada para la API de Parse (Back4App). Recibe
 	OPENAI_API_KEY=<tu api key>
 	OPENAI_MODEL=gpt-4o-mini
 	OPENAI_API_URL=https://api.openai.com/v1/chat/completions
+	OPENAI_TEMPERATURE=0.7 # opcional, deja vacío para usar el valor por defecto del modelo
 	```
 
 2. Instalá dependencias:
