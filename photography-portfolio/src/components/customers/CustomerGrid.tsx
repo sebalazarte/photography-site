@@ -1,5 +1,6 @@
 import type React from 'react';
 import type { CustomerRecord } from '../../api/users';
+import { PersonAddIcon, RefreshIcon } from '../../types/icons';
 
 const iconProps = {
   width: 16,
@@ -75,10 +76,16 @@ const CustomerGrid: React.FC<CustomerGridProps> = ({
             onClick={onRefresh}
             disabled={loading}
           >
-            {loading ? 'Actualizando…' : 'Actualizar'}
+            <span className="d-inline-flex align-items-center gap-1">
+              <RefreshIcon aria-hidden="true" width={14} height={14} />
+              {loading ? 'Actualizando…' : 'Actualizar'}
+            </span>
           </button>
           <button type="button" className="btn btn-sm btn-primary" onClick={onCreateNew}>
-            Nuevo cliente
+            <span className="d-inline-flex align-items-center gap-1">
+              <PersonAddIcon aria-hidden="true" width={14} height={14} />
+              Nuevo cliente
+            </span>
           </button>
         </div>
       </div>

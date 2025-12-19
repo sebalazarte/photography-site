@@ -1,6 +1,7 @@
 import type React from 'react';
 import { useState } from 'react';
 import type { GalleryDTO } from '../../api/galleries';
+import { FolderAddIcon } from '../../types/icons';
 
 const iconProps = {
   width: 16,
@@ -211,7 +212,10 @@ const GalleryAdminPanel: React.FC<GalleryAdminPanelProps> = ({
               className="btn btn-primary"
               disabled={disabled || creatingGallery || !newGalleryName.trim()}
             >
-              {creatingGallery ? 'Agregando…' : 'Agregar'}
+              <span className="d-inline-flex align-items-center gap-1">
+                <FolderAddIcon aria-hidden="true" width={14} height={14} />
+                {creatingGallery ? 'Agregando…' : 'Agregar'}
+              </span>
             </button>
           </form>
 

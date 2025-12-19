@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom';
 import type React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useSite } from '../../context/SiteContext';
+import { GalleryIcon, HomeIcon, LogoutIcon, PasswordIcon, SiteDataIcon, UsersIcon } from '../../types/icons';
 
 const AppHeader: React.FC = () => {
   const { user, logout } = useAuth();
@@ -68,24 +69,36 @@ const AppHeader: React.FC = () => {
                   <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
                     <li>
                       <NavLink to="/admin/home" className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-                        Inicio
+                        <span className="d-inline-flex align-items-center gap-2">
+                          <HomeIcon aria-hidden="true" width={14} height={14} />
+                          Inicio
+                        </span>
                       </NavLink>
                     </li>
                     <li>
                       <NavLink to="/admin/galleries" className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-                        Galerías
+                        <span className="d-inline-flex align-items-center gap-2">
+                          <GalleryIcon aria-hidden="true" width={14} height={14} />
+                          Galerías
+                        </span>
                       </NavLink>
                     </li>
                     {isAdmin && (
                       <li>
                         <NavLink to="/admin/customers" className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-                          Clientes
+                          <span className="d-inline-flex align-items-center gap-2">
+                            <UsersIcon aria-hidden="true" width={14} height={14} />
+                            Clientes
+                          </span>
                         </NavLink>
                       </li>
                     )}
                     <li>
                       <NavLink to="/profile/details" className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-                        Datos del sitio
+                        <span className="d-inline-flex align-items-center gap-2">
+                          <SiteDataIcon aria-hidden="true" width={14} height={14} />
+                          Datos del sitio
+                        </span>
                       </NavLink>
                     </li>
                     
@@ -94,12 +107,18 @@ const AppHeader: React.FC = () => {
                     </li>
                     <li>
                       <NavLink to="/profile/password" className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
-                        Cambiar contraseña
+                        <span className="d-inline-flex align-items-center gap-2">
+                          <PasswordIcon aria-hidden="true" width={14} height={14} />
+                          Cambiar contraseña
+                        </span>
                       </NavLink>
                     </li>
                     <li>
                       <button className="dropdown-item text-danger" onClick={() => { void logout(); }}>
-                        Salir
+                        <span className="d-inline-flex align-items-center gap-2">
+                          <LogoutIcon aria-hidden="true" width={14} height={14} />
+                          Salir
+                        </span>
                       </button>
                     </li>
                   </ul>

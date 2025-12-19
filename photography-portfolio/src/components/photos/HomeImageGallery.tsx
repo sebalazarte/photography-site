@@ -5,63 +5,13 @@ import LightboxModal from './LightboxModal';
 import { assignGroupToPhotos, clearFolderPhotos, deletePhotoFromFolder, updatePhotoOrder } from '../../api/photos';
 import { useAuth } from '../../context/AuthContext';
 import { HOME_FOLDER } from '../../constants';
+import { AssignIcon, BroomIcon, ErrorIcon, OriginIcon, ReorderIcon, SuccessIcon, TargetIcon, TrashIcon } from '../../types/icons';
 
 interface HomeImageGalleryProps {
   photos?: StoredPhoto[];
   loading?: boolean;
   onPhotosChange?: (photos: StoredPhoto[]) => void;
 }
-
-const OriginIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <path d="M6 4l5.5 13 1.5-5 5 1.8L6 4z" fill="currentColor" stroke="none" />
-    <path d="M13 12l4 4" />
-  </svg>
-);
-
-const TargetIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <circle cx="12" cy="12" r="8" />
-    <path d="M8.5 12.5l2.5 2.5 4.5-5.5" />
-  </svg>
-);
-
-const AssignIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <circle cx="12" cy="12" r="8" />
-    <path d="M9 12.5l2 2 4-4.5" />
-  </svg>
-);
 
 type GroupKey = number | string | null;
 
@@ -315,7 +265,10 @@ const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = f
               onClick={handleClearHome}
               disabled={savingOrder || clearingAll || assigningGroup}
             >
-              {clearingAll ? 'Limpiando…' : 'Limpiar'}
+              <span className="d-inline-flex align-items-center gap-1">
+                <BroomIcon aria-hidden="true" width={14} height={14} />
+                {clearingAll ? 'Limpiando…' : 'Limpiar'}
+              </span>
             </button>
             <button
               type="button"
@@ -345,7 +298,10 @@ const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = f
               }}
               disabled={savingOrder || clearingAll || assigningGroup}
             >
-              {orderingMode ? 'Salir de ordenar' : 'Ordenar'}
+              <span className="d-inline-flex align-items-center gap-1">
+                <ReorderIcon aria-hidden="true" width={14} height={14} />
+                {orderingMode ? 'Salir de ordenar' : 'Ordenar'}
+              </span>
             </button>
           </div>
           {assignGroupMode && (
@@ -455,23 +411,7 @@ const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = f
                   void handleDeletePhoto(photo);
                 }}
               >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  role="img"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M5 7h14M10 11v6M14 11v6M7 7l1 12h8l1-12M9 7V5h6v2"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+                <TrashIcon aria-hidden="true" />
               </button>
             )}
             {canManage && orderingMode && !sourcePhotoId && (
@@ -546,13 +486,9 @@ const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = f
           <div className="d-flex align-items-center">
             <span className="gallery-toast__icon" aria-hidden="true">
               {notice.type === 'success' ? (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+                <SuccessIcon aria-hidden="true" />
               ) : (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+                <ErrorIcon aria-hidden="true" />
               )}
             </span>
             <div className="toast-body ps-2 pe-3">{notice.message}</div>

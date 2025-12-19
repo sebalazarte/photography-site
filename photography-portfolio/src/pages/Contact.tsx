@@ -5,6 +5,7 @@ import ContactPhotoManager from '../components/photos/ContactPhotoManager';
 import { useSite } from '../context/SiteContext';
 import { formatWhatsappLink } from '../utils/contact';
 import { updateSiteProfile } from '../api/site';
+import { EditIcon } from '../types/icons';
 
 const Contact: React.FC = () => {
   const { user } = useAuth();
@@ -122,7 +123,10 @@ const Contact: React.FC = () => {
                 )}
                 {user && (
                   <button type="button" className="btn btn-sm btn-outline-secondary" onClick={startEditing}>
-                    Editar descripción
+                    <span className="d-inline-flex align-items-center gap-1">
+                      <EditIcon aria-hidden="true" width={14} height={14} />
+                      Editar descripción
+                    </span>
                   </button>
                 )}
               </>

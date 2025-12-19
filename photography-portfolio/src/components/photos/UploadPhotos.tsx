@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useId } from 'react';
 import type { StoredPhoto } from '../../types/photos';
 import { deletePhotoFromFolder, listFolderPhotos, updatePhotoOrder, uploadToFolder } from '../../api/photos';
+import { SelectPhotosIcon, TrashIcon } from '../../types/icons';
 
 interface UploadPhotosProps {
   folder: string;
@@ -208,7 +209,10 @@ const UploadPhotos: React.FC<UploadPhotosProps> = ({ folder, photos, onPhotosCha
             className="btn btn-primary"
             onClick={() => document.getElementById(inputId)?.click()}
           >
-            Seleccionar fotos
+            <span className="d-inline-flex align-items-center gap-1">
+              <SelectPhotosIcon aria-hidden="true" width={16} height={16} />
+              Seleccionar fotos
+            </span>
           </button>
         </div>
       </div>
@@ -254,7 +258,10 @@ const UploadPhotos: React.FC<UploadPhotosProps> = ({ folder, photos, onPhotosCha
                         className="btn btn-sm btn-outline-danger"
                         onClick={() => removePhoto(photo.id)}
                       >
-                        Eliminar
+                        <span className="d-inline-flex align-items-center gap-1">
+                          <TrashIcon aria-hidden="true" width={14} height={14} />
+                          Eliminar
+                        </span>
                       </button>
                     </div>
                   </div>

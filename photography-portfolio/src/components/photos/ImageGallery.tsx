@@ -6,6 +6,7 @@ import LightboxModal from './LightboxModal';
 import { useAuth } from '../../context/AuthContext';
 import { deletePhotoFromFolder, featurePhotoOnHome, updatePhotoOrder } from '../../api/photos';
 import { HOME_FOLDER } from '../../constants';
+import { ErrorIcon, SendHomeIcon, SuccessIcon, TrashIcon } from '../../types/icons';
 
 interface ImageGalleryProps {
   folder: string;
@@ -259,7 +260,10 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ folder, photos }) => {
                 onClick={handleToggleSendHomeMode}
                 disabled={savingOrder}
               >
-                {sendHomeMode ? 'Salir de enviar' : 'Enviar Inicio'}
+                <span className="d-inline-flex align-items-center gap-1">
+                  <SendHomeIcon aria-hidden="true" width={14} height={14} />
+                  {sendHomeMode ? 'Salir de enviar' : 'Enviar Inicio'}
+                </span>
               </button>
             </div>
           )}
@@ -323,23 +327,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ folder, photos }) => {
                       void handleSendToHome(photo);
                     }}
                   >
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                      role="img"
-                      aria-hidden="true"
-                    >
-                      <path
-                        d="M4 11.5L12 4l8 7.5V20a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1v-8.5z"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinejoin="round"
-                        strokeLinecap="round"
-                      />
-                    </svg>
+                    <SendHomeIcon aria-hidden="true" />
                   </button>
                 </div>
               )}
@@ -369,23 +357,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ folder, photos }) => {
                     void handleDeletePhoto(photo);
                   }}
                 >
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    role="img"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M5 7h14M10 11v6M14 11v6M7 7l1 12h8l1-12M9 7V5h6v2"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
+                  <TrashIcon aria-hidden="true" />
                 </button>
               )}
             </figure>
@@ -409,13 +381,9 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ folder, photos }) => {
           <div className="d-flex align-items-center">
             <span className="gallery-toast__icon" aria-hidden="true">
               {notice.type === 'success' ? (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+                <SuccessIcon aria-hidden="true" />
               ) : (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+                <ErrorIcon aria-hidden="true" />
               )}
             </span>
             <div className="toast-body ps-2 pe-3">{notice.message}</div>

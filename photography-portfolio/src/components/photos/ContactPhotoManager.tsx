@@ -3,6 +3,7 @@ import type React from 'react';
 import { useFolderPhotos } from '../../hooks/useFolderPhotos';
 import { CONTACT_FOLDER } from '../../constants';
 import { deletePhotoFromFolder, uploadToFolder } from '../../api/photos';
+import { PhotoRemoveIcon, PhotoSwapIcon } from '../../types/icons';
 
 interface ContactPhotoManagerProps {
   contactName: string;
@@ -87,7 +88,10 @@ const ContactPhotoManager: React.FC<ContactPhotoManagerProps> = ({ contactName, 
               onClick={() => fileInputRef.current?.click()}
               disabled={status === 'saving'}
             >
-              {mainPhoto ? 'Cambiar foto' : 'Subir foto'}
+              <span className="d-inline-flex align-items-center gap-1">
+                <PhotoSwapIcon aria-hidden="true" width={14} height={14} />
+                {mainPhoto ? 'Cambiar foto' : 'Subir foto'}
+              </span>
             </button>
             {mainPhoto && (
               <button
@@ -96,7 +100,10 @@ const ContactPhotoManager: React.FC<ContactPhotoManagerProps> = ({ contactName, 
                 onClick={handleRemovePhoto}
                 disabled={status === 'saving'}
               >
-                Quitar foto
+                <span className="d-inline-flex align-items-center gap-1">
+                  <PhotoRemoveIcon aria-hidden="true" width={14} height={14} />
+                  Quitar foto
+                </span>
               </button>
             )}
             {status === 'saving' && <span className="text-info small">Guardando…</span>}
