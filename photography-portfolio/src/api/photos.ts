@@ -342,7 +342,7 @@ export const updatePhotoOrder = async (folder: string, order: string[]) => {
   return fetchPhotoOrders(folder);
 };
 
-export const featurePhotoOnHome = async (photo: StoredPhoto) => {
+export const featurePhotoOnHome = async (photo: StoredPhoto, options?: { group?: number | string }) => {
   const ownerId = requireOwnerId();
   const fileName = photo.filename?.trim() || photo.id;
   if (!fileName) {
@@ -354,10 +354,28 @@ export const featurePhotoOnHome = async (photo: StoredPhoto) => {
     return false;
   }
 
+  const normalizedGroup = typeof options?.group !== 'undefined' ? sanitizeGroupInput(options.group) : null;
+
+  let position = homePhotos.length;
+  if (normalizedGroup !== null && homePhotos.length) {
+    let lastPositionInGroup: number | null = null;
+    homePhotos.forEach((entry, index) => {
+      if (typeof entry.group === 'number' && Number.isFinite(entry.group) && entry.group === normalizedGroup) {
+        const candidate = typeof entry.order === 'number' && Number.isFinite(entry.order) ? entry.order : index;
+        if (lastPositionInGroup === null || candidate > lastPositionInGroup) {
+          lastPositionInGroup = candidate;
+        }
+      }
+    });
+    if (lastPositionInGroup !== null) {
+      position = lastPositionInGroup + 1;
+    }
+  }
+
   const body = {
     folderKey: HOME_FOLDER,
     photoId: fileName,
-    position: homePhotos.length,
+    position,
     originalName: photo.originalName,
     fileSize: photo.size ?? null,
     photoFile: {
@@ -366,6 +384,7 @@ export const featurePhotoOnHome = async (photo: StoredPhoto) => {
     },
     user: buildUserPointer(ownerId),
     ...(SITE_ID ? { siteId: SITE_ID } : {}),
+    ...(normalizedGroup !== null ? { group: normalizedGroup, grupo: normalizedGroup } : {}),
   };
 
   await parseRequest(PHOTO_ORDER_PATH, {

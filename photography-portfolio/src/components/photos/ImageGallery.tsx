@@ -23,6 +23,8 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ folder, photos }) => {
   const items = photos ?? fetched;
   const { user } = useAuth();
   const canReorder = Boolean(user);
+  const isHomeFolder = folder === HOME_FOLDER;
+  const allowSendToHome = canReorder && !isHomeFolder;
   const [orderedItems, setOrderedItems] = useState<StoredPhoto[]>(items);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -31,6 +33,9 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ folder, photos }) => {
   const [featuringId, setFeaturingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [sendHomeMode, setSendHomeMode] = useState(false);
+  const [sendHomeGroupValue, setSendHomeGroupValue] = useState('');
+  const trimmedSendHomeGroup = sendHomeGroupValue.trim();
 
   useEffect(() => {
     if (!notice) return;
@@ -39,6 +44,23 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ folder, photos }) => {
     }, 2000);
     return () => clearTimeout(timer);
   }, [notice]);
+
+  useEffect(() => {
+    if (!allowSendToHome && sendHomeMode) {
+      setSendHomeMode(false);
+      setSendHomeGroupValue('');
+    }
+  }, [allowSendToHome, sendHomeMode]);
+
+  const handleToggleSendHomeMode = () => {
+    setSendHomeMode(current => {
+      const next = !current;
+      if (!next) {
+        setSendHomeGroupValue('');
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
     setOrderedItems(prev => {
@@ -158,22 +180,29 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ folder, photos }) => {
   }, [canReorder, draggedId, folder, orderedItems]);
 
   const handleSendToHome = useCallback(async (photo: StoredPhoto) => {
-    if (!canReorder || featuringId === photo.id) {
+    if (!allowSendToHome || featuringId === photo.id) {
+      return;
+    }
+    const groupValue = sendHomeGroupValue.trim();
+    if (!groupValue.length) {
+      setNotice({ type: 'error', message: 'Ingresá el grupo antes de enviar al inicio.' });
       return;
     }
     try {
       setFeaturingId(photo.id);
-      const added = await featurePhotoOnHome(photo);
+      const added = await featurePhotoOnHome(photo, { group: groupValue });
       if (!added) {
         setNotice({ type: 'error', message: 'Esta foto ya está destacada en el inicio.' });
       } else {
-        setNotice({ type: 'success', message: 'Foto enviada al inicio.' });
+        setNotice({ type: 'success', message: `Foto enviada al inicio (grupo ${groupValue}).` });
         setHomePhotos(prev => {
           const exists = prev.some(item => item.id === photo.id || item.filename === photo.filename);
           if (exists) {
             return prev;
           }
-          return [...prev, photo];
+          const parsedGroup = Number(groupValue);
+          const assignedGroup = Number.isFinite(parsedGroup) ? parsedGroup : groupValue;
+          return [...prev, { ...photo, group: assignedGroup }];
         });
         await refreshHomePhotos();
       }
@@ -186,7 +215,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ folder, photos }) => {
     } finally {
       setFeaturingId(null);
     }
-  }, [canReorder, featuringId, refreshHomePhotos, setHomePhotos]);
+  }, [allowSendToHome, featuringId, refreshHomePhotos, sendHomeGroupValue, setHomePhotos, setNotice]);
 
   const handleDeletePhoto = useCallback(async (photo: StoredPhoto) => {
     if (!canReorder || deletingId === photo.id) {
@@ -220,10 +249,43 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ folder, photos }) => {
   return (
     <div>
       {canReorder && (
-        <p className="text-secondary small mb-2">Arrastrá y soltá las fotos para ajustar el orden.</p>
-      )}
-      {savingOrder && canReorder && (
-        <p className="text-info small mb-3">Guardando nuevo orden…</p>
+        <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
+          <span className="text-secondary small flex-grow-1">Arrastrá y soltá las fotos para ajustar el orden.</span>
+          {allowSendToHome && (
+            <div className="ms-auto d-flex gap-2">
+              <button
+                type="button"
+                className={`btn btn-sm ${sendHomeMode ? 'btn-warning' : 'btn-outline-warning'}`}
+                onClick={handleToggleSendHomeMode}
+                disabled={savingOrder}
+              >
+                {sendHomeMode ? 'Salir de enviar' : 'Enviar Inicio'}
+              </button>
+            </div>
+          )}
+          {allowSendToHome && sendHomeMode && (
+            <div className="w-100 d-flex flex-wrap align-items-center gap-2 mt-2">
+              <div className="input-group input-group-sm w-auto">
+                <span className="input-group-text">Grupo</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  className="form-control"
+                  value={sendHomeGroupValue}
+                  onChange={(event) => setSendHomeGroupValue(event.target.value)}
+                  placeholder="Ej. 1"
+                  min={0}
+                />
+              </div>
+              <span className="text-secondary small">
+                Ingresá el grupo y luego usa “Enviar al inicio” en cada foto.
+              </span>
+            </div>
+          )}
+          {savingOrder && (
+            <span className="text-info small w-100">Guardando nuevo orden…</span>
+          )}
+        </div>
       )}
       <div className="masonry-grid">
         {galleryItems.map((photo, index) => {
@@ -240,7 +302,6 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ folder, photos }) => {
             onDragEnd: handleDragEnd,
           } : {};
 
-          const isHomeFolder = folder === HOME_FOLDER;
           const alreadyFeatured = isHomeFolder || homePhotos.some(item => item.id === photo.id || item.filename === photo.filename);
           return (
             <figure
@@ -248,14 +309,14 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ folder, photos }) => {
               className={figureClass}
               {...dragProps}
             >
-              {canReorder && !alreadyFeatured && (
+              {allowSendToHome && sendHomeMode && !alreadyFeatured && (
                 <div className="masonry-item__actions">
                   <button
                     type="button"
                     className="masonry-item__action"
                     aria-label="Enviar al inicio"
                     title="Enviar al inicio"
-                    disabled={savingOrder || featuringId === photo.id}
+                    disabled={savingOrder || featuringId === photo.id || !trimmedSendHomeGroup.length}
                     onClick={(event) => {
                       event.preventDefault();
                       event.stopPropagation();
