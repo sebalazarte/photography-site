@@ -145,6 +145,25 @@ export const EditIcon = ({ width = 16, height = 16, ...props }: IconProps) => (
   </svg>
 );
 
+export const SparklesIcon = ({ width = 16, height = 16, ...props }: IconProps) => (
+  <svg
+    width={width}
+    height={height}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    {...props}
+  >
+    <path d="M12 3l1.2 3.8L17 8l-3.8 1.2L12 13 10.8 9.2 7 8l3.8-1.2z" />
+    <path d="M5 17l.8 2.2L8 20l-2.2.8L5 23l-.8-2.2L2 20l2.2-.8z" />
+    <path d="M18 14l.9 2.5L22 17l-3.1.5L18 20l-.9-2.5L14 17l3.1-.5z" />
+  </svg>
+);
+
 export const PhotoSwapIcon = ({ width = 16, height = 16, ...props }: IconProps) => (
   <svg
     width={width}

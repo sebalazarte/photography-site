@@ -5,7 +5,8 @@ import ContactPhotoManager from '../components/photos/ContactPhotoManager';
 import { useSite } from '../context/SiteContext';
 import { formatWhatsappLink } from '../utils/contact';
 import { updateSiteProfile } from '../api/site';
-import { EditIcon } from '../types/icons';
+import { improveContactDescription } from '../api/ai';
+import { EditIcon, SparklesIcon } from '../types/icons';
 
 const Contact: React.FC = () => {
   const { user } = useAuth();
@@ -24,11 +25,18 @@ const Contact: React.FC = () => {
   const [aboutDraft, setAboutDraft] = useState(site?.about ?? '');
   const [aboutStatus, setAboutStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [aboutError, setAboutError] = useState<string | null>(null);
+  const [aiStatus, setAiStatus] = useState<'idle' | 'working'>('idle');
+  const [aiError, setAiError] = useState<string | null>(null);
+  const isAiWorking = aiStatus === 'working';
+  const isSavingAbout = aboutStatus === 'saving';
+  const isFormBusy = isAiWorking || isSavingAbout;
 
   const startEditing = () => {
     setAboutDraft(site?.about ?? '');
     setAboutError(null);
     setAboutStatus('idle');
+    setAiStatus('idle');
+    setAiError(null);
     setEditingAbout(true);
   };
 
@@ -37,6 +45,8 @@ const Contact: React.FC = () => {
     setAboutDraft(site?.about ?? '');
     setAboutError(null);
     setAboutStatus('idle');
+    setAiStatus('idle');
+    setAiError(null);
   };
 
   const handleAboutSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -45,6 +55,8 @@ const Contact: React.FC = () => {
     try {
       setAboutStatus('saving');
       setAboutError(null);
+      setAiError(null);
+      setAiStatus('idle');
       await updateSiteProfile({ about: aboutDraft.trim() });
       await refreshSite();
       setAboutStatus('success');
@@ -54,6 +66,27 @@ const Contact: React.FC = () => {
       const message = err instanceof Error ? err.message : 'No se pudo actualizar la descripción.';
       setAboutError(message);
       setAboutStatus('error');
+    }
+  };
+
+  const handleImproveAbout = async () => {
+    if (aiStatus === 'working') return;
+    const trimmedDraft = aboutDraft.trim();
+    if (!trimmedDraft) {
+      setAiError('Agrega una descripción antes de solicitar mejoras.');
+      return;
+    }
+    try {
+      setAiStatus('working');
+      setAiError(null);
+      const improved = await improveContactDescription(trimmedDraft);
+      setAboutDraft(improved);
+    } catch (err) {
+      console.error('No se pudo mejorar la descripción con IA', err);
+      const message = err instanceof Error ? err.message : 'No se pudo mejorar el texto.';
+      setAiError(message);
+    } finally {
+      setAiStatus('idle');
     }
   };
 
@@ -90,11 +123,30 @@ const Contact: React.FC = () => {
                     rows={8}
                     value={aboutDraft}
                     onChange={event => setAboutDraft(event.target.value)}
-                    disabled={aboutStatus === 'saving'}
+                    disabled={isFormBusy}
                   />
+                  <div className="d-flex flex-wrap gap-3 align-items-center justify-content-between">
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1"
+                      onClick={handleImproveAbout}
+                      disabled={isFormBusy}
+                    >
+                      <SparklesIcon aria-hidden="true" width={14} height={14} />
+                      {isAiWorking ? 'Mejorando…' : 'Mejorar con IA'}
+                    </button>
+                    <span className="text-secondary small">
+                      Obtén una versión más profesional sin salir del editor.
+                    </span>
+                  </div>
                   {aboutError && (
                     <div className="alert alert-danger mb-0" role="alert">
                       {aboutError}
+                    </div>
+                  )}
+                  {aiError && (
+                    <div className="alert alert-warning mb-0" role="alert">
+                      {aiError}
                     </div>
                   )}
                   <div className="d-flex gap-2 justify-content-end">
@@ -102,11 +154,11 @@ const Contact: React.FC = () => {
                       type="button"
                       className="btn btn-outline-secondary"
                       onClick={cancelEditing}
-                      disabled={aboutStatus === 'saving'}
+                      disabled={isFormBusy}
                     >
                       Cancelar
                     </button>
-                    <button type="submit" className="btn btn-primary" disabled={aboutStatus === 'saving'}>
+                    <button type="submit" className="btn btn-primary" disabled={isFormBusy}>
                       {aboutStatus === 'saving' ? 'Guardando…' : 'Guardar cambios'}
                     </button>
                   </div>

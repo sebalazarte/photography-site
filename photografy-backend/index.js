@@ -5,6 +5,7 @@ import customersRouter from './routes/customers.js';
 import photosRouter from './routes/photos.js';
 import galleriesRouter from './routes/galleries.js';
 import siteRouter from './routes/site.js';
+import aiRouter from './routes/ai.js';
 
 const app = express();
 app.use(cors());
@@ -14,6 +15,7 @@ app.use('/api/customers', customersRouter);
 app.use('/api/photos', photosRouter);
 app.use('/api/galleries', galleriesRouter);
 app.use('/api/site', siteRouter);
+app.use('/api/ai', aiRouter);
 
 app.use((err, _req, res, _next) => {
   console.error(err);

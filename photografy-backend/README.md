@@ -14,6 +14,14 @@ Servidor Express que actúa como fachada para la API de Parse (Back4App). Recibe
 	PARSE_JS_KEY=<opcional>
 	```
 
+	Para habilitar la mejora automática de textos, agregá además:
+
+	```env
+	OPENAI_API_KEY=<tu api key>
+	OPENAI_MODEL=gpt-4o-mini
+	OPENAI_API_URL=https://api.openai.com/v1/chat/completions
+	```
+
 2. Instalá dependencias:
 
 	```bash
@@ -41,5 +49,6 @@ Servidor Express que actúa como fachada para la API de Parse (Back4App). Recibe
 - `POST /api/photos?folder=...`: sube nuevas fotos; los archivos se envían a Parse como `File` y se crea el registro correspondiente en `PhotoOrder`.
 - `DELETE /api/photos?id=<objectId>&folder=...`: borra una foto (por `objectId`).
 - `PUT /api/photos/order`: guarda el orden manual de las fotos.
+- `POST /api/ai/improve-text`: devuelve una versión mejorada del texto recibido (requiere configurar `OPENAI_API_KEY`).
 
 Toda la información se guarda en Back4App, por lo que ya no existe la carpeta `data/` ni `storage/` en este proyecto.
