@@ -378,6 +378,7 @@ const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = f
           const shouldShowTargetButton = Boolean(sourcePhotoId && (matchesSourceGroup || isSourcePhoto));
           const isAssignSelected = assignSelection.has(photo.id);
           const assignButtonTitle = isAssignSelected ? 'Quitar de la selección' : 'Seleccionar para asignar grupo';
+          const showDeleteButton = canManage && !orderingMode && !assignGroupMode;
           return (
             <figure key={photo.id} className="masonry-item">
               {canManage && (orderingMode || assignGroupMode) && (
@@ -398,7 +399,7 @@ const HomeImageGallery: React.FC<HomeImageGalleryProps> = ({ photos, loading = f
                 decoding="async"
               />
             </button>
-            {canManage && !assignGroupMode && (
+            {showDeleteButton && (
               <button
                 type="button"
                 className="masonry-item__delete"
