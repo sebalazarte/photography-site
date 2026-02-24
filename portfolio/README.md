@@ -2,7 +2,7 @@
 
 A minimalist and visually appealing React/TypeScript application for uploading and showcasing photography work.
 
-> Note: The standalone Express API now lives in the sibling project `../photografy-backend`.
+> Note: The standalone Express API now lives in the sibling project `../backend-back4app`.
 
 ## Features
 
@@ -22,7 +22,7 @@ A minimalist and visually appealing React/TypeScript application for uploading a
 ### Installation
 
 1. Clone or download this repository
-2. Navigate to the project directory: `cd photography-portfolio`
+2. Navigate to the project directory: `cd portfolio`
 3. Install dependencies: `npm install`
 4. Start the development server: `npm run dev`
 
@@ -43,7 +43,7 @@ A minimalist and visually appealing React/TypeScript application for uploading a
 ## Project Structure
 
 ```
-photography-portfolio/
+portfolio/
 ├── public/
 ├── src/
 │   ├── api/
