@@ -13,10 +13,10 @@ src/Galleries/*
 !src/Galleries/.gitkeep
 
 # Environment
-.env
-.env.local
-.env.*
-.env.example keep
+#.env
+#.env.local
+#.env.*
+#.env.example keep
 
 # Python
 __pycache__/
