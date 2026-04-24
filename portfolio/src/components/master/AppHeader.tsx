@@ -1,22 +1,19 @@
 import { NavLink } from 'react-router-dom';
 import type React from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { useSite } from '../../context/SiteContext';
 import { GalleryIcon, HomeIcon, LogoutIcon, PasswordIcon, SiteDataIcon, UsersIcon } from '../../types/icons';
 
 const AppHeader: React.FC = () => {
   const { user, logout } = useAuth();
-  const { site } = useSite();
-  const contactName = site?.name ?? site?.username ?? 'Portfolio';
 
   const isAdmin = Boolean(user?.roles?.includes('admin'));
 
   return (
     <header className="App-header mb-4">
-      <nav className="navbar navbar-expand-md bg-body-tertiary">
+      <nav className="navbar navbar-expand-md navbar-dark bg-dark">
         <div className="container">
           <NavLink to="/" className="navbar-brand">
-            <div className="nav nav-name text-uppercase">{contactName}</div>
+            <img src="/logo_asl_studio.png" alt="ASL Studio" height={50} />
           </NavLink>
           <button
             className="navbar-toggler"
@@ -66,7 +63,7 @@ const AppHeader: React.FC = () => {
                   >
                     {user.username}
                   </button>
-                  <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+                  <ul className="dropdown-menu dropdown-menu-dark dropdown-menu-end" aria-labelledby="userMenu">
                     <li>
                       <NavLink to="/admin/home" className={({ isActive }) => `dropdown-item ${isActive ? 'active' : ''}`}>
                         <span className="d-inline-flex align-items-center gap-2">
